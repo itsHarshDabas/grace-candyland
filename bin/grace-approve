@@ -1,0 +1,28 @@
+#!/bin/sh
+# grace-approve AGENT COMMAND [CWD]
+# Ask the user, through the Grace shell, to allow one command an agent wants to run.
+# Exit status: 0 allowed once, 1 denied, 2 couldn't ask (treat as denied).
+# It waits until the user answers. Nothing ever approves on a timeout.
+set -u
+
+[ $# -ge 2 ] || {
+    echo "usage: grace-approve AGENT COMMAND [CWD]" >&2
+    exit 2
+}
+agent=$1 cmd=$2 cwd=${3:-$PWD}
+shell=@SHELLDIR@
+
+dir=${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is not set}/grace/approvals
+mkdir -p "$dir" && chmod 700 "$dir" || exit 2
+id=$(date +%s%N)-$$
+fifo=$dir/$id
+mkfifo -m 600 "$fifo" || exit 2
+trap 'rm -f "$fifo"; qs -p "$shell" ipc call approvals cancel "$id" >/dev/null 2>&1' EXIT
+trap 'exit 1' INT TERM HUP
+
+if ! qs -p "$shell" ipc call approvals request "$id" "$agent" "$cmd" "$cwd" "$fifo" >/dev/null 2>&1; then
+    echo "grace-approve: the Grace shell isn't running, so the request is denied" >&2
+    exit 2
+fi
+read -r answer <"$fifo"
+[ "$answer" = allow ]

@@ -1,0 +1,43 @@
+#!/bin/sh
+# grace-launch terminal | files | editor FILE | screenshot
+# Opens the app set in desktop.conf, or the first one installed, so keybindings work on any distro.
+
+conf=${XDG_CONFIG_HOME:-$HOME/.config}/grace/desktop.conf
+pref() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\([^#[:space:]]*\).*/\1/p" "$conf" 2>/dev/null | tail -n 1; }
+first() {
+    for c in "$@"; do
+        command -v "$c" >/dev/null && { echo "$c"; return 0; }
+    done
+    return 1
+}
+missing() {
+    notify-send "Nothing to open" "Install a $1 app." 2>/dev/null
+    exit 1
+}
+
+case ${1:-} in
+terminal)
+    t=$(pref terminal)
+    [ -n "$t" ] || t=$(first foot kitty alacritty wezterm ghostty kgx gnome-terminal konsole xterm) || missing terminal
+    exec "$t"
+    ;;
+files)
+    f=$(first nautilus thunar dolphin nemo pcmanfm-qt pcmanfm) || missing "file manager"
+    exec "$f"
+    ;;
+editor)
+    shift
+    e=$(first gnome-text-editor gedit kate mousepad featherpad code) && exec "$e" "$@"
+    exec xdg-open "$@"
+    ;;
+screenshot)
+    dir=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots
+    mkdir -p "$dir"
+    file=$dir/$(date +%Y-%m-%d_%H-%M-%S).png
+    grim "$file" && notify-send -a Screenshot -i "$file" "Screenshot saved" "$file"
+    ;;
+*)
+    echo "usage: grace-launch terminal | files | editor FILE | screenshot" >&2
+    exit 2
+    ;;
+esac

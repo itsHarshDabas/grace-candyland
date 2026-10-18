@@ -1,0 +1,38 @@
+# Maintainer: GraceOS <https://github.com/itsHarshDabas/GraceOS>
+pkgname=grace-candyland-git
+pkgver=r1
+pkgrel=1
+pkgdesc="The GraceOS desktop: Hyprland tiling with the Grace shell (Quickshell)"
+arch=(any)
+url=https://github.com/itsHarshDabas/grace-candyland
+license=(LicenseRef-unspecified)
+depends=(hyprland quickshell qt6-svg inter-font xdg-utils)
+makedepends=(git make)
+optdepends=(
+  'foot: terminal (or any other)'
+  'ttf-fira-code: monospace font in approval prompts'
+  'networkmanager: Wi-Fi toggle'
+  'bluez: Bluetooth toggle'
+  'pipewire-pulse: volume slider (with wireplumber)'
+  'upower: battery status'
+  'power-profiles-daemon: Power Mode toggle'
+  'brightnessctl: brightness slider and keys'
+  'hyprsunset: Night Light'
+  'grim: screenshots (Print key)'
+  'libnotify: screenshot notification'
+  'xdg-desktop-portal-hyprland: screen sharing and file pickers'
+)
+provides=(grace-candyland)
+conflicts=(grace-candyland)
+source=("git+$url.git")
+sha256sums=(SKIP)
+
+pkgver() {
+  cd grace-candyland
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  cd grace-candyland
+  make DESTDIR="$pkgdir" PREFIX=/usr install
+}

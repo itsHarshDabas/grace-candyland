@@ -1,0 +1,26 @@
+#!/bin/sh
+# Start a Grace Candyland session: Hyprland with the Grace shell.
+set -eu
+
+data=@DATADIR@
+cfg=${XDG_CONFIG_HOME:-$HOME/.config}/grace
+mkdir -p "$cfg"
+[ -e "$cfg/desktop.conf" ] || cp "$data/desktop.conf" "$cfg/desktop.conf"
+[ -e "$cfg/hyprland.conf" ] || printf '# Your own Hyprland settings. Loaded after the Grace defaults, so they win.\n' >"$cfg/hyprland.conf"
+
+export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=grace-candyland XDG_SESSION_TYPE=wayland
+
+# Window buttons on the left (close, minimize, maximize) in apps that draw their own title bar,
+# unless the user already chose a layout.
+if command -v gsettings >/dev/null &&
+    [ "$(gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null)" = "'appmenu:close'" ]; then
+    gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:' || true
+fi
+
+# Without GPU acceleration (a VM with 3D off, for example) Hyprland can't start.
+# If it dies within a few seconds, try once more with software rendering.
+start=$(date +%s)
+Hyprland --config "$data/hyprland.conf" && exit 0
+[ $(($(date +%s) - start)) -lt 15 ] || exit 1
+echo "grace-candyland: Hyprland failed to start, retrying with software rendering" >&2
+LIBGL_ALWAYS_SOFTWARE=1 exec Hyprland --config "$data/hyprland.conf"

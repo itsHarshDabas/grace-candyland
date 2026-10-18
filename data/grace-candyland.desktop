@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Grace Candyland
+Comment=The GraceOS desktop: Hyprland tiling with the Grace shell
+Exec=grace-candyland
+Type=Application
+DesktopNames=Hyprland;Grace

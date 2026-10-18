@@ -1,0 +1,11 @@
+name: check
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm --needed hyprland quickshell shellcheck make git
+      - uses: actions/checkout@v4
+      # Hyprland refuses to run as root, even just to verify the config.
+      - run: useradd -m ci && chown -R ci . && su ci -c "make check"

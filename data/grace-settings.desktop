@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Settings
+GenericName=Grace Settings
+Comment=Appearance and desktop settings
+Exec=grace-settings
+Icon=grace-settings
+Type=Application
+Categories=Settings;DesktopSettings;
+Keywords=appearance;accent;theme;gaps;dock;
