@@ -27,11 +27,12 @@ uninstall:
 	      "$(DESTDIR)$(PREFIX)/bin/candysole" "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CandySole.desktop" 	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CandySole.svg"
 
 # Static checks; tests/approve.sh additionally needs a running session.
-# The config sources ~/.config/grace/hyprland.conf (grace-candyland creates it), so give it an empty one.
+# The config sources ~/.config/grace/hyprland.conf (grace-candyland creates it), so give it an empty one,
+# and Hyprland won't even verify a config without XDG_RUNTIME_DIR (unset in CI).
 check:
 	shellcheck bin/* tests/*.sh
 	tmp=$$(mktemp -d) && $(MAKE) -s install DESTDIR=$$tmp && \
 	  mkdir -p $$tmp/home/.config/grace && touch $$tmp/home/.config/grace/hyprland.conf && \
-	  HOME=$$tmp/home Hyprland --verify-config --config $$tmp$(DATADIR)/hyprland.conf; s=$$?; rm -rf $$tmp; exit $$s
+	  mkdir -m700 $$tmp/run && HOME=$$tmp/home XDG_RUNTIME_DIR=$$tmp/run Hyprland --verify-config --config $$tmp$(DATADIR)/hyprland.conf; s=$$?; rm -rf $$tmp; exit $$s
 
 .PHONY: install uninstall check
