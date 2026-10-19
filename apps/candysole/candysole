@@ -135,6 +135,19 @@ def exit_code_from_status(wait_status):
     return wait_status
 
 
+# Programs can print hidden links (OSC 8) with any target; only open web and mail ones.
+SAFE_LINK_SCHEMES = ("http", "https", "ftp", "mailto")
+
+
+def safe_link(link):
+    """The URI to open for a clicked link, or None if its scheme isn't safe to hand off."""
+    if not link:
+        return None
+    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", link) is None:
+        link = "https://" + link
+    return link if urlparse(link).scheme.lower() in SAFE_LINK_SCHEMES else None
+
+
 def format_exit_message(exit_code):
     return "[process exited with status {}]".format(exit_code)
 
@@ -358,7 +371,7 @@ def main(argv=None):
             link = self._link_at(terminal, x, y)
             menu = Gio.Menu()
 
-            if link is not None:
+            if link is not None and safe_link(link) is not None:
                 link_section = Gio.Menu()
                 link_section.append_item(
                     self._menu_item("Open Link", "win.open-link", link)
@@ -607,11 +620,11 @@ def main(argv=None):
             terminal.set_font_scale(min(3.0, max(0.5, scale)))
 
         def _open_link(self, link):
-            if not link:
+            uri = safe_link(link)
+            if uri is None:
+                print("candysole: not opening {!r}: only web and mail links open".format(link), file=sys.stderr)
                 return
-            if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", link) is None:
-                link = "https://" + link
-            self._launch_uri(link)
+            self._launch_uri(uri)
 
         def _launch_uri(self, uri):
             try:

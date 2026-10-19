@@ -128,3 +128,12 @@ def test_format_exit_message():
         candysole.format_exit_message(127)
         == "[process exited with status 127]"
     )
+
+
+def test_safe_link_allows_only_web_and_mail():
+    assert candysole.safe_link("https://example.org/a") == "https://example.org/a"
+    assert candysole.safe_link("www.example.org") == "https://www.example.org"
+    assert candysole.safe_link("mailto:me@example.org") == "mailto:me@example.org"
+    assert candysole.safe_link("file:///tmp/evil.desktop") is None
+    assert candysole.safe_link("javascript:alert(1)") is None
+    assert candysole.safe_link("") is None
