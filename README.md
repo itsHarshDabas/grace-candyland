@@ -93,6 +93,8 @@ grace-approve "Claude Code" "npm install express" ~/graceos && npm install expre
 ```
 - **Exit status:** 0 means allowed once and 1 means denied. 2 means it couldn't ask, for example because the shell isn't running; treat that as denied.
 - A request waits until you answer. Nothing approves on a timeout, and no keyboard shortcut answers it.
+- The prompt shows text exactly as sent. Control, bidi and zero-width characters appear as `\uXXXX`. Allow once stays disabled until the whole command is visible; for long commands, open Details first.
+- The shell chooses where the answer goes from a validated request id; a caller can't redirect it to another path.
 - **Limitation:** the answer travels through a FIFO under `$XDG_RUNTIME_DIR/grace/approvals` that only your user can open. That stops other users, but not a program already running as you. Real enforcement needs agents to run as a separate user or in a sandbox, which is planned in GraceOS.
 
 ## Develop
