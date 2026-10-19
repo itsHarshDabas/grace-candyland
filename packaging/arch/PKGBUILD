@@ -6,7 +6,7 @@ pkgdesc="The GraceOS desktop: Hyprland tiling with the Grace shell (Quickshell)"
 arch=(any)
 url=https://github.com/itsHarshDabas/grace-candyland
 license=(LicenseRef-unspecified)
-depends=(hyprland quickshell qt6-svg inter-font xdg-utils)
+depends=(hyprland quickshell qt6-svg inter-font adwaita-cursors xdg-utils)
 makedepends=(git make)
 optdepends=(
   'foot: terminal (or any other)'

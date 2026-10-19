@@ -21,10 +21,12 @@ uninstall:
 	      "$(DESTDIR)$(PREFIX)/share/applications/grace-settings.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg"
 
-# Static checks; tests/smoke.sh additionally starts the shell in a real Hyprland session.
+# Static checks; tests/approve.sh additionally needs a running session.
+# The config sources ~/.config/grace/hyprland.conf (grace-candyland creates it), so give it an empty one.
 check:
 	shellcheck bin/* tests/*.sh
 	tmp=$$(mktemp -d) && $(MAKE) -s install DESTDIR=$$tmp && \
-	  Hyprland --verify-config --config $$tmp$(DATADIR)/hyprland.conf; s=$$?; rm -rf $$tmp; exit $$s
+	  mkdir -p $$tmp/home/.config/grace && touch $$tmp/home/.config/grace/hyprland.conf && \
+	  HOME=$$tmp/home Hyprland --verify-config --config $$tmp$(DATADIR)/hyprland.conf; s=$$?; rm -rf $$tmp; exit $$s
 
 .PHONY: install uninstall check
