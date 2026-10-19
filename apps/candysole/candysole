@@ -1,0 +1,770 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import re
+import sys
+from urllib.parse import unquote, urlparse
+
+APP_ID = "org.graceos.CandySole"
+APP_NAME = "CandySole"
+DEFAULT_FONT = "Fira Code 11"
+URL_PATTERN = r"(?:https?|ftp)://[^\s<>\"'`]+|www\.[^\s<>\"'`]+"
+PCRE2_MULTILINE = 0x00000400
+PCRE2_UTF = 0x00080000
+BACKGROUND = "#121419"
+FOREGROUND = "#e6e8ee"
+CURSOR = "#e6e8ee"
+SELECTION_BACKGROUND = "#2f75cb"
+SELECTION_FOREGROUND = "#ffffff"
+PALETTE = [
+    "#282b34",
+    "#ec6271",
+    "#7ed99c",
+    "#e6be6e",
+    "#4b92e7",
+    "#b27ac5",
+    "#399cae",
+    "#d9dce5",
+    "#7d8392",
+    "#ff8a8a",
+    "#96e6af",
+    "#f5d08c",
+    "#78aff0",
+    "#cd9bde",
+    "#64bed2",
+    "#f1f2f6",
+]
+CSS = """
+vte-terminal {
+    padding: 14px;
+}
+headerbar {
+    background-color: #121419;
+}
+"""
+
+
+def parse_arguments(argv=None):
+    arguments = argv
+    if arguments:
+        arguments = list(arguments)
+        if os.path.basename(arguments[0]) in ("candysole", "candysole.py"):
+            arguments = arguments[1:]
+    parser = argparse.ArgumentParser(
+        prog="candysole",
+        description="A colorful terminal for GraceOS.",
+    )
+    parser.add_argument(
+        "--new-window",
+        action="store_true",
+        help="open a new terminal window",
+    )
+    parser.add_argument(
+        "--working-directory",
+        metavar="DIR",
+        help="start the terminal in DIR",
+    )
+    parser.add_argument(
+        "-e",
+        "--command",
+        dest="command",
+        metavar="CMD",
+        nargs=argparse.REMAINDER,
+        help="run CMD and its arguments instead of a shell",
+    )
+    options = parser.parse_args(arguments)
+    if options.command is not None and not options.command:
+        parser.error("argument -e/--command: expected a command")
+    return options
+
+
+def hex_to_rgb(value):
+    if not isinstance(value, str):
+        raise ValueError("color must be a string")
+    match = re.fullmatch(r"#?([0-9a-fA-F]{6})", value.strip())
+    if match is None:
+        raise ValueError("color must be a six-digit hexadecimal value")
+    digits = match.group(1)
+    return (
+        int(digits[0:2], 16),
+        int(digits[2:4], 16),
+        int(digits[4:6], 16),
+    )
+
+
+def rgb_to_hex(color):
+    if len(color) != 3:
+        raise ValueError("color must contain three components")
+    components = []
+    for component in color:
+        if not isinstance(component, int) or not 0 <= component <= 255:
+            raise ValueError("color components must be integers from 0 to 255")
+        components.append(component)
+    return "#{:02x}{:02x}{:02x}".format(*components)
+
+
+def rgba_from_hex(value, alpha=1.0):
+    if not isinstance(alpha, (int, float)) or not 0.0 <= alpha <= 1.0:
+        raise ValueError("alpha must be between 0 and 1")
+    red, green, blue = hex_to_rgb(value)
+    return (red / 255.0, green / 255.0, blue / 255.0, float(alpha))
+
+
+def directory_from_uri(uri):
+    if not uri:
+        return None
+    parsed = urlparse(uri)
+    if parsed.scheme != "file":
+        return None
+    if parsed.netloc not in ("", "localhost"):
+        return None
+    path = unquote(parsed.path)
+    return path or None
+
+
+def exit_code_from_status(wait_status):
+    if wait_status is None:
+        return 0
+    if wait_status < 0:
+        return wait_status
+    if wait_status & 0x7F == 0:
+        return (wait_status >> 8) & 0xFF
+    signal_number = wait_status & 0x7F
+    if signal_number != 0x7F:
+        return -signal_number
+    return wait_status
+
+
+def format_exit_message(exit_code):
+    return "[process exited with status {}]".format(exit_code)
+
+
+def main(argv=None):
+    import warnings
+
+    import gi
+
+    # VTE 0.78+ deprecates the directory/title getters for "termprops"; they still work.
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    gi.require_version("Adw", "1")
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Vte", "3.91")
+    from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango, Vte
+
+    def color(value, alpha=1.0):
+        red, green, blue, opacity = rgba_from_hex(value, alpha)
+        rgba = Gdk.RGBA()
+        rgba.red = red
+        rgba.green = green
+        rgba.blue = blue
+        rgba.alpha = opacity
+        return rgba
+
+    class CandyWindow(Adw.ApplicationWindow):
+        def __init__(self, working_directory=None, command=None, **kwargs):
+            super().__init__(**kwargs)
+            self._pages = {}
+            self.set_default_size(900, 560)
+            self.set_title(APP_NAME)
+            self._build_actions()
+            self._build_ui()
+            self._add_terminal(working_directory, command)
+
+        def _build_actions(self):
+            self._copy_action = self._add_action("copy", self._on_copy)
+            self._add_action("paste", self._on_paste)
+            self._add_action("select-all", self._on_select_all)
+            self._add_action("new-tab", self._on_new_tab)
+            self._add_action("close-tab", self._on_close_tab)
+            self._add_action("new-window", self._on_new_window)
+            self._add_action("open-files", self._on_open_files)
+            self._add_action("zoom-in", self._on_zoom_in)
+            self._add_action("zoom-out", self._on_zoom_out)
+            self._add_action("zoom-reset", self._on_zoom_reset)
+            self._add_action("next-tab", self._on_next_tab)
+            self._add_action("previous-tab", self._on_previous_tab)
+            self._add_action(
+                "open-link",
+                self._on_open_link,
+                GLib.VariantType.new("s"),
+            )
+            self._add_action(
+                "copy-link",
+                self._on_copy_link,
+                GLib.VariantType.new("s"),
+            )
+            self._copy_action.set_enabled(False)
+
+        def _add_action(self, name, callback, parameter_type=None):
+            action = Gio.SimpleAction.new(name, parameter_type)
+            action.connect("activate", callback)
+            self.add_action(action)
+            return action
+
+        def _build_ui(self):
+            self._tab_view = Adw.TabView()
+            self._tab_view.connect(
+                "notify::n-pages",
+                self._on_pages_changed,
+            )
+            self._tab_view.connect(
+                "notify::selected-page",
+                self._on_selected_page_changed,
+            )
+            self._tab_view.connect("page-detached", self._on_page_detached)
+
+            self._window_title = Adw.WindowTitle(
+                title=APP_NAME,
+                subtitle="",
+            )
+            self._tab_bar = Adw.TabBar(view=self._tab_view, autohide=True)
+            self._title_stack = Gtk.Stack()
+            self._title_stack.set_transition_type(
+                Gtk.StackTransitionType.CROSSFADE
+            )
+            self._title_stack.add_named(self._window_title, "title")
+            self._title_stack.add_named(self._tab_bar, "tabs")
+            self._title_stack.set_visible_child_name("title")
+
+            new_tab_button = Gtk.Button(label="+", tooltip_text="New Tab")
+            new_tab_button.add_css_class("flat")
+            new_tab_button.connect(
+                "clicked",
+                lambda _button: self._on_new_tab(None, None),
+            )
+
+            header = Adw.HeaderBar()
+            header.pack_start(new_tab_button)
+            header.set_title_widget(self._title_stack)
+
+            toolbar_view = Adw.ToolbarView()
+            toolbar_view.add_top_bar(header)
+            toolbar_view.set_content(self._tab_view)
+            self.set_content(toolbar_view)
+
+        def _configure_terminal(self, terminal):
+            terminal.set_allow_hyperlink(True)
+            terminal.set_scrollback_lines(10000)
+            terminal.set_audible_bell(False)
+            terminal.set_bold_is_bright(False)
+            terminal.set_cursor_blink_mode(Vte.CursorBlinkMode.ON)
+            terminal.set_cursor_shape(Vte.CursorShape.IBEAM)
+            terminal.set_font(Pango.FontDescription.from_string(DEFAULT_FONT))
+            terminal.set_font_scale(1.0)
+            terminal.set_colors(
+                color(FOREGROUND),
+                color(BACKGROUND),
+                [color(value) for value in PALETTE],
+            )
+            terminal.set_color_cursor(color(CURSOR))
+            terminal.set_color_highlight(color(SELECTION_BACKGROUND))
+            terminal.set_color_highlight_foreground(color(SELECTION_FOREGROUND))
+            try:
+                regex = Vte.Regex.new_for_match(
+                    URL_PATTERN,
+                    -1,
+                    PCRE2_UTF | PCRE2_MULTILINE,
+                )
+                terminal.match_add_regex(regex, 0)
+            except GLib.Error:
+                pass
+
+        def _add_terminal(self, working_directory=None, command=None, focus=True):
+            cwd = self._resolve_directory(working_directory)
+            command_mode = bool(command)
+            argv = list(command) if command_mode else [self._shell()]
+            terminal = Vte.Terminal()
+            self._configure_terminal(terminal)
+
+            scroller = Gtk.ScrolledWindow()
+            scroller.set_policy(
+                Gtk.PolicyType.AUTOMATIC,
+                Gtk.PolicyType.AUTOMATIC,
+            )
+            scroller.set_overlay_scrolling(True)
+            scroller.set_hexpand(True)
+            scroller.set_vexpand(True)
+            scroller.set_child(terminal)
+
+            page = self._tab_view.append(scroller)
+            self._pages[page] = terminal
+            page.set_title(self._initial_title(command))
+            page.set_tooltip(cwd)
+
+            terminal.connect(
+                "child-exited",
+                self._on_child_exited,
+                page,
+                command_mode,
+            )
+            terminal.connect(
+                "notify::window-title",
+                self._on_terminal_title_changed,
+                page,
+            )
+            terminal.connect(
+                "notify::current-directory-uri",
+                self._on_terminal_cwd_changed,
+                page,
+            )
+            terminal.connect(
+                "selection-changed",
+                lambda _terminal: self._sync_copy_action(),
+            )
+            self._install_terminal_gestures(terminal, page)
+
+            if focus:
+                self._tab_view.set_selected_page(page)
+            self._refresh_header_title()
+            self._sync_copy_action()
+            self._spawn(terminal, cwd, argv)
+            if focus:
+                GLib.idle_add(self._focus_terminal, terminal)
+            return terminal
+
+        def _install_terminal_gestures(self, terminal, page):
+            right_click = Gtk.GestureClick.new()
+            right_click.set_button(Gdk.BUTTON_SECONDARY)
+            right_click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+            right_click.connect(
+                "pressed",
+                lambda gesture, _count, x, y: self._show_context_menu(
+                    terminal,
+                    page,
+                    gesture,
+                    x,
+                    y,
+                ),
+            )
+            terminal.add_controller(right_click)
+
+            control_click = Gtk.GestureClick.new()
+            control_click.set_button(Gdk.BUTTON_PRIMARY)
+            control_click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+            control_click.connect(
+                "pressed",
+                lambda gesture, _count, x, y: self._handle_control_click(
+                    terminal,
+                    gesture,
+                    x,
+                    y,
+                ),
+            )
+            terminal.add_controller(control_click)
+
+        def _show_context_menu(self, terminal, page, gesture, x, y):
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+            link = self._link_at(terminal, x, y)
+            menu = Gio.Menu()
+
+            if link is not None:
+                link_section = Gio.Menu()
+                link_section.append_item(
+                    self._menu_item("Open Link", "win.open-link", link)
+                )
+                link_section.append_item(
+                    self._menu_item("Copy Link", "win.copy-link", link)
+                )
+                menu.append_section(None, link_section)
+
+            edit_section = Gio.Menu()
+            edit_section.append("Copy", "win.copy")
+            edit_section.append("Paste", "win.paste")
+            edit_section.append("Select All", "win.select-all")
+            menu.append_section(None, edit_section)
+
+            tab_section = Gio.Menu()
+            tab_section.append("New Tab", "win.new-tab")
+            tab_section.append("New Window", "win.new-window")
+            menu.append_section(None, tab_section)
+
+            files_section = Gio.Menu()
+            files_section.append("Open in Files", "win.open-files")
+            menu.append_section(None, files_section)
+
+            zoom_section = Gio.Menu()
+            zoom_section.append("Zoom In", "win.zoom-in")
+            zoom_section.append("Zoom Out", "win.zoom-out")
+            zoom_section.append("Reset Zoom", "win.zoom-reset")
+            menu.append_section(None, zoom_section)
+
+            self._copy_action.set_enabled(terminal.get_has_selection())
+            popover = Gtk.PopoverMenu.new_from_model(menu)
+            popover.set_parent(terminal)
+            popover.set_has_arrow(False)
+            rectangle = Gdk.Rectangle()
+            rectangle.x = int(x)
+            rectangle.y = int(y)
+            rectangle.width = 1
+            rectangle.height = 1
+            popover.set_pointing_to(rectangle)
+            popover.connect("closed", lambda widget: widget.unparent())
+            popover.popup()
+
+        def _menu_item(self, label, action, target):
+            item = Gio.MenuItem.new(label, action)
+            item.set_action_and_target_value(action, GLib.Variant("s", target))
+            return item
+
+        def _handle_control_click(self, terminal, gesture, x, y):
+            state = gesture.get_current_event_state()
+            if not state & Gdk.ModifierType.CONTROL_MASK:
+                return
+            link = self._link_at(terminal, x, y)
+            if link is None:
+                return
+            gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+            self._open_link(link)
+
+        def _link_at(self, terminal, x, y):
+            link = terminal.check_hyperlink_at(x, y)
+            if link:
+                return link
+            try:
+                match, _tag = terminal.check_match_at(x, y)
+            except (TypeError, ValueError, GLib.Error):
+                return None
+            return match or None
+
+        def _on_pages_changed(self, view, _pspec):
+            count = view.get_n_pages()
+            self._title_stack.set_visible_child_name(
+                "tabs" if count > 1 else "title"
+            )
+            if count == 0:
+                GLib.idle_add(self._close_if_empty)
+            else:
+                self._refresh_header_title()
+
+        def _close_if_empty(self):
+            if self._tab_view.get_n_pages() == 0:
+                self.close()
+            return GLib.SOURCE_REMOVE
+
+        def _on_selected_page_changed(self, _view, _pspec):
+            self._refresh_header_title()
+            self._sync_copy_action()
+
+        def _on_page_detached(self, _view, page, _position):
+            self._pages.pop(page, None)
+            self._refresh_header_title()
+            self._sync_copy_action()
+
+        def _on_child_exited(self, terminal, status, page, command_mode):
+            exit_code = exit_code_from_status(status)
+            if command_mode and exit_code != 0:
+                message = "\r\n{}\r\n".format(
+                    format_exit_message(exit_code)
+                )
+                terminal.feed(message.encode("utf-8"))
+                return
+            self._close_page(page)
+
+        def _on_terminal_title_changed(self, terminal, _pspec, page):
+            if page not in self._pages:
+                return
+            page.set_title(terminal.get_window_title() or "Terminal")
+            if self._tab_view.get_selected_page() == page:
+                self._refresh_header_title()
+
+        def _on_terminal_cwd_changed(self, terminal, _pspec, page):
+            if page not in self._pages:
+                return
+            directory = directory_from_uri(terminal.get_current_directory_uri())
+            page.set_tooltip(directory or "")
+            if self._tab_view.get_selected_page() == page:
+                self._refresh_header_title()
+
+        def _on_spawn_complete(self, terminal, _pid, error, _data):
+            if error is not None:
+                message = "candysole: failed to start: {}\r\n".format(
+                    error.message
+                )
+                terminal.feed(message.encode("utf-8"))
+
+        def _spawn(self, terminal, cwd, argv):
+            try:
+                terminal.spawn_async(
+                    Vte.PtyFlags.DEFAULT,
+                    cwd,
+                    argv,
+                    self._environment(),
+                    GLib.SpawnFlags.SEARCH_PATH,  # so `-e sudo ...` finds sudo
+                    None,  # child setup
+                    None,  # child setup data
+                    -1,  # default timeout
+                    None,  # cancellable
+                    self._on_spawn_complete,
+                    terminal,
+                )
+            except GLib.Error as error:
+                message = "candysole: failed to start: {}\r\n".format(
+                    error.message
+                )
+                terminal.feed(message.encode("utf-8"))
+
+        def _refresh_header_title(self):
+            page = self._tab_view.get_selected_page()
+            terminal = self._pages.get(page) if page is not None else None
+            title = page.get_title() if page is not None else None
+            subtitle = ""
+            if terminal is not None:
+                subtitle = (
+                    directory_from_uri(terminal.get_current_directory_uri()) or ""
+                )
+            self._window_title.set_title(title or APP_NAME)
+            self._window_title.set_subtitle(subtitle)
+            self.set_title(title or APP_NAME)
+
+        def _current_terminal(self):
+            return self._pages.get(self._tab_view.get_selected_page())
+
+        def _sync_copy_action(self):
+            terminal = self._current_terminal()
+            self._copy_action.set_enabled(
+                bool(terminal is not None and terminal.get_has_selection())
+            )
+
+        def _current_directory(self):
+            terminal = self._current_terminal()
+            if terminal is not None:
+                directory = directory_from_uri(
+                    terminal.get_current_directory_uri()
+                )
+                if directory and os.path.isdir(directory):
+                    return directory
+            return self._resolve_directory(None)
+
+        def _focus_terminal(self, terminal):
+            terminal.grab_focus()
+            return GLib.SOURCE_REMOVE
+
+        def _on_copy(self, _action, _parameter):
+            terminal = self._current_terminal()
+            if terminal is None or not terminal.get_has_selection():
+                return
+            text = terminal.get_text_selected(Vte.Format.TEXT)
+            if text:
+                self._set_clipboard(text)
+
+        def _on_paste(self, _action, _parameter):
+            terminal = self._current_terminal()
+            if terminal is not None:
+                terminal.paste_clipboard()
+
+        def _on_select_all(self, _action, _parameter):
+            terminal = self._current_terminal()
+            if terminal is not None:
+                terminal.select_all()
+
+        def _on_new_tab(self, _action, _parameter):
+            self._add_terminal(self._current_directory())
+
+        def _on_close_tab(self, _action, _parameter):
+            page = self._tab_view.get_selected_page()
+            if page is not None:
+                self._tab_view.close_page(page)
+
+        def _on_new_window(self, _action, _parameter):
+            application = self.get_application()
+            if application is not None:
+                application.create_window(self._current_directory(), None)
+
+        def _on_open_files(self, _action, _parameter):
+            self._launch_uri(
+                Gio.File.new_for_path(self._current_directory()).get_uri()
+            )
+
+        def _on_zoom_in(self, _action, _parameter):
+            self._change_font_scale(0.1)
+
+        def _on_zoom_out(self, _action, _parameter):
+            self._change_font_scale(-0.1)
+
+        def _on_zoom_reset(self, _action, _parameter):
+            terminal = self._current_terminal()
+            if terminal is not None:
+                terminal.set_font_scale(1.0)
+
+        def _on_next_tab(self, _action, _parameter):
+            self._tab_view.select_next_page()
+
+        def _on_previous_tab(self, _action, _parameter):
+            self._tab_view.select_previous_page()
+
+        def _on_open_link(self, _action, parameter):
+            self._open_link(parameter.get_string())
+
+        def _on_copy_link(self, _action, parameter):
+            self._set_clipboard(parameter.get_string())
+
+        def _change_font_scale(self, amount):
+            terminal = self._current_terminal()
+            if terminal is None:
+                return
+            scale = round(terminal.get_font_scale() + amount, 1)
+            terminal.set_font_scale(min(3.0, max(0.5, scale)))
+
+        def _open_link(self, link):
+            if not link:
+                return
+            if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", link) is None:
+                link = "https://" + link
+            self._launch_uri(link)
+
+        def _launch_uri(self, uri):
+            try:
+                Gio.AppInfo.launch_default_for_uri(uri, None)
+            except GLib.Error as error:
+                print(
+                    "candysole: cannot open {}: {}".format(uri, error.message),
+                    file=sys.stderr,
+                )
+
+        def _set_clipboard(self, text):
+            display = Gdk.Display.get_default()
+            if display is not None:
+                display.get_clipboard().set_text(text)
+
+        def _close_page(self, page):
+            if page in self._pages:
+                self._tab_view.close_page(page)
+
+        def _resolve_directory(self, working_directory):
+            if working_directory:
+                candidate = os.path.abspath(
+                    os.path.expanduser(working_directory)
+                )
+                if os.path.isdir(candidate):
+                    return candidate
+            home = os.path.expanduser("~")
+            return home if os.path.isdir(home) else "/"
+
+        def _shell(self):
+            return os.environ.get("SHELL") or "/bin/bash"
+
+        def _environment(self):
+            environment = os.environ.copy()
+            environment["TERM"] = "xterm-256color"
+            environment["COLORTERM"] = "truecolor"
+            environment["TERM_PROGRAM"] = APP_NAME
+            return [
+                "{}={}".format(key, value)
+                for key, value in environment.items()
+                if value is not None
+            ]
+
+        def _initial_title(self, command):
+            if command:
+                return os.path.basename(command[0])
+            return "Terminal"
+
+    class CandyApplication(Adw.Application):
+        def __init__(self):
+            super().__init__(
+                application_id=APP_ID,
+                flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
+            )
+
+        def do_startup(self):
+            Adw.Application.do_startup(self)
+            GLib.set_application_name(APP_NAME)
+            Gtk.Window.set_default_icon_name(APP_ID)
+            Adw.StyleManager.get_default().set_color_scheme(
+                Adw.ColorScheme.FORCE_DARK
+            )
+            self._install_accels()
+            self._install_css()
+
+        def do_activate(self):
+            windows = self.get_windows()
+            if windows:
+                windows[0].present()
+            else:
+                self.create_window(None, None)
+
+        def do_command_line(self, command_line):
+            try:
+                options = parse_arguments(command_line.get_arguments()[1:])
+            except SystemExit as error:
+                return int(error.code or 0)
+            self.create_window(
+                options.working_directory,
+                options.command,
+            )
+            return 0
+
+        def create_window(self, working_directory=None, command=None):
+            window = CandyWindow(
+                application=self,
+                working_directory=working_directory,
+                command=command,
+            )
+            window.present()
+            return window
+
+        def _install_accels(self):
+            self.set_accels_for_action(
+                "win.new-tab",
+                ["<Control><Shift>t"],
+            )
+            self.set_accels_for_action(
+                "win.close-tab",
+                ["<Control><Shift>w"],
+            )
+            self.set_accels_for_action(
+                "win.new-window",
+                ["<Control><Shift>n"],
+            )
+            self.set_accels_for_action(
+                "win.copy",
+                ["<Control><Shift>c"],
+            )
+            self.set_accels_for_action(
+                "win.paste",
+                ["<Control><Shift>v"],
+            )
+            self.set_accels_for_action(
+                "win.select-all",
+                ["<Control><Shift>a"],
+            )
+            self.set_accels_for_action(
+                "win.zoom-in",
+                ["<Control>plus", "<Control>equal", "<Control>KP_Add"],
+            )
+            self.set_accels_for_action(
+                "win.zoom-out",
+                ["<Control>minus", "<Control>KP_Subtract"],
+            )
+            self.set_accels_for_action(
+                "win.zoom-reset",
+                ["<Control>0"],
+            )
+            self.set_accels_for_action(
+                "win.next-tab",
+                ["<Control>Page_Down"],
+            )
+            self.set_accels_for_action(
+                "win.previous-tab",
+                ["<Control>Page_Up"],
+            )
+
+        def _install_css(self):
+            display = Gdk.Display.get_default()
+            if display is None:
+                return
+            provider = Gtk.CssProvider()
+            provider.load_from_data(CSS.encode("utf-8"))
+            Gtk.StyleContext.add_provider_for_display(
+                display,
+                provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+
+    app = CandyApplication()
+    return app.run(sys.argv if argv is None else argv)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

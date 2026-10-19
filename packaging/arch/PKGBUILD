@@ -6,11 +6,11 @@ pkgdesc="The GraceOS desktop: Hyprland tiling with the Grace shell (Quickshell)"
 arch=(any)
 url=https://github.com/itsHarshDabas/grace-candyland
 license=(LicenseRef-unspecified)
-depends=(hyprland quickshell qt6-svg inter-font adwaita-cursors xdg-utils)
+depends=(hyprland quickshell qt6-svg inter-font ttf-fira-code adwaita-cursors xdg-utils hypridle
+         python-gobject gtk4 libadwaita vte4)
 makedepends=(git make)
 optdepends=(
-  'konsole: terminal, with the Grace profile (or any other)'
-  'ttf-fira-code: monospace font in approval prompts'
+  'cherrycola: Ask Grace answers from a local model (from the GraceOS repo)'
   'networkmanager: Wi-Fi toggle'
   'bluez: Bluetooth toggle'
   'pipewire-pulse: volume slider (with wireplumber)'

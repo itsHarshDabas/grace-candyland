@@ -10,8 +10,8 @@ Singleton {
     id: root
 
     property bool reduceMotion: false
-    // Hyprland is drawing on the CPU (see grace-candyland): blur, shadows and animations would make it crawl.
-    readonly property bool software: Quickshell.env("GRACE_SOFTWARE_RENDERING") === "1"
+    // Lite mode (set by grace-candyland when drawing on the CPU or with little RAM): blur, shadows and animations off.
+    readonly property bool lite: Quickshell.env("GRACE_LITE") === "1"
     property string appliedLayout: "tile"
     // window, fade and workspace speeds in Hyprland units (lower is faster)
     readonly property var speeds: ({ calm: [7, 5, 6], smooth: [4.5, 3, 4], snappy: [2.6, 2, 2.6] })
@@ -20,7 +20,7 @@ Singleton {
         const c = Config;
         const s = speeds[c.animations] || speeds.smooth;
         const g = c.gaps - c.gaps % 2; // gaps_in counts twice between windows, so keep it even
-        const kw = [`general:gaps_out ${g}`, `general:gaps_in ${g / 2}`, `decoration:rounding ${c.rounding}`, `decoration:blur:enabled ${c.blur && !software ? 1 : 0}`, `decoration:shadow:enabled ${software ? 0 : 1}`, `animations:enabled ${c.animations === "off" || reduceMotion || software ? 0 : 1}`, `animation windows,1,${s[0]},grace,popin 90%`, `animation fade,1,${s[1]},graceOut`, `animation workspaces,1,${s[2]},grace,slidefade 12%`, `animation layers,1,${s[1]},grace,fade`];
+        const kw = [`general:gaps_out ${g}`, `general:gaps_in ${g / 2}`, `decoration:rounding ${c.rounding}`, `decoration:blur:enabled ${c.blur && !lite ? 1 : 0}`, `decoration:shadow:enabled ${lite ? 0 : 1}`, `animations:enabled ${c.animations === "off" || reduceMotion || lite ? 0 : 1}`, `animation windows,1,${s[0]},grace,popin 90%`, `animation fade,1,${s[1]},graceOut`, `animation workspaces,1,${s[2]},grace,slidefade 12%`, `animation layers,1,${s[1]},grace,fade`];
         if (appliedLayout === "float" && c.layout !== "float") {
             // A window rule can't be removed at runtime: reload, and configreloaded re-applies the rest.
             appliedLayout = c.layout;

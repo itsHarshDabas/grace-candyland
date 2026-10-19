@@ -98,6 +98,10 @@ PanelWindow {
                 spacing: 6
                 Item { Layout.fillWidth: true }
                 Button {
+                    text: "Lock"
+                    onClicked: Ui.lock()
+                }
+                Button {
                     text: "Log out"
                     onClicked: Hyprland.dispatch("exit")
                 }

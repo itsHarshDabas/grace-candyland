@@ -24,7 +24,7 @@ Singleton {
     readonly property bool dnd: get("dnd", "off") === "on"
     readonly property bool nightLight: get("night_light", "off") === "on"
     readonly property list<string> pinned: get("pinned", "").split(/\s+/).filter(s => s)
-    readonly property string askCommand: get("ask_command", "")
+    readonly property string askCommand: get("ask_command", "cherrycola ask")
 
     function get(key, fallback) {
         const v = values[key];

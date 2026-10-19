@@ -21,12 +21,26 @@ ShellRoot {
         Dock {}
     }
     Settings {}
+    Lock {
+        id: lock
+    }
+    Connections {
+        target: Ui
+        function onLockRequested() {
+            lock.lock();
+        }
+    }
 
     // Bound in hyprland.conf as "global, quickshell:<name>".
     GlobalShortcut {
         name: "launcher"
         description: "Ask Grace / search apps"
         onPressed: Ui.toggleLauncher()
+    }
+    GlobalShortcut {
+        name: "lock"
+        description: "Lock the screen"
+        onPressed: Ui.lock()
     }
     GlobalShortcut {
         name: "controlcenter"
@@ -45,6 +59,13 @@ ShellRoot {
         target: "controlcenter"
         function toggle(): void {
             Ui.toggleCc();
+        }
+    }
+    // hypridle locks through this (see data/hypridle.conf).
+    IpcHandler {
+        target: "lock"
+        function lock(): void {
+            Ui.lock();
         }
     }
     IpcHandler {

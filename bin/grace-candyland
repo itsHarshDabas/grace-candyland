@@ -6,8 +6,6 @@ data=@DATADIR@
 cfg=${XDG_CONFIG_HOME:-$HOME/.config}/grace
 mkdir -p "$cfg"
 [ -e "$cfg/desktop.conf" ] || cp "$data/desktop.conf" "$cfg/desktop.conf"
-# Konsole: the Grace profile and no menu bar, unless the user already has a Konsole setup.
-[ -e "${XDG_CONFIG_HOME:-$HOME/.config}/konsolerc" ] || cp "$data/konsolerc" "${XDG_CONFIG_HOME:-$HOME/.config}/konsolerc"
 [ -e "$cfg/hyprland.conf" ] || printf '# Your own Hyprland settings. Loaded after the Grace defaults, so they win.\n' >"$cfg/hyprland.conf"
 
 export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=grace-candyland XDG_SESSION_TYPE=wayland
@@ -19,11 +17,15 @@ if command -v gsettings >/dev/null &&
     gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:' || true
 fi
 
+# Lite mode (no blur, shadows or animations) on PCs with less than 4 GB of RAM; the shell reads GRACE_LITE.
+mem_kb=$(sed -n 's/^MemTotal: *\([0-9]*\) kB/\1/p' /proc/meminfo 2>/dev/null || echo 0)
+[ "${mem_kb:-0}" -ge 3800000 ] || export GRACE_LITE=1
+
 # Without GPU acceleration (a VM with 3D off, for example) Hyprland can't start.
 # If it dies within a few seconds, try once more with software rendering.
 start=$(date +%s)
 Hyprland --config "$data/hyprland.conf" && exit 0
 [ $(($(date +%s) - start)) -lt 15 ] || exit 1
 echo "grace-candyland: Hyprland failed to start, retrying with software rendering" >&2
-# GRACE_SOFTWARE_RENDERING tells the shell to turn off blur, shadows and animations.
-LIBGL_ALWAYS_SOFTWARE=1 GRACE_SOFTWARE_RENDERING=1 exec Hyprland --config "$data/hyprland.conf"
+# Drawing on the CPU: lite mode too.
+LIBGL_ALWAYS_SOFTWARE=1 GRACE_LITE=1 exec Hyprland --config "$data/hyprland.conf"

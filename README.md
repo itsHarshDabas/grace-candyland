@@ -6,6 +6,8 @@ The desktop of [GraceOS](https://github.com/itsHarshDabas/GraceOS): GNOME's calm
 
 ![Control center](docs/screenshots/control-center.png)
 ![Settings and an agent approval request](docs/screenshots/settings-and-approval.png)
+![Lock screen](docs/screenshots/lock-screen.png)
+![CandySole with its right-click menu](docs/screenshots/candysole.png)
 
 These screenshots come from a VMware VM without 3D acceleration (software rendering).
 
@@ -26,7 +28,9 @@ These screenshots come from a VMware VM without 3D acceleration (software render
   - Volume and brightness sliders.
   - The Local AI card: master AI switch, the running Ollama model with Stop, and the agent waiting on you.
   - Notifications, with pending approvals pinned on top.
-- **Ask Grace** (Super+Space) searches your apps. With AI on, the last row sends the question to `ask_command` from `desktop.conf`. If none is set, it says so.
+- **Ask Grace** (Super+Space) searches your apps. With AI on, the last row asks [CherryCola](https://github.com/itsHarshDabas/GraceOS/tree/main/services/cherrycola), GraceOS's local model (Ollama or LM Studio), and streams the answer into the panel. If the model isn't downloaded yet, it offers a button to download it. Set `ask_command` in `desktop.conf` to use something else.
+- **Lock screen, "Goodness GraceOS":** Super+L, the Lock button in the control center, after 10 minutes idle and before sleep (hypridle). It shows the time, the date, your name and a password field, and checks the password with PAM. It uses the compositor's session lock, so if the shell crashes while locked, the screen stays locked.
+- **CandySole**, the GraceOS terminal (`apps/candysole`, GTK 4 + VTE): tabs, a right-click menu (Copy, Paste, Select All, New Tab, New Window, Open in Files, zoom), clickable links, Grace colors and Fira Code. `candysole -e CMD` runs a command.
 - **Dock:** hidden until the pointer touches the bottom-middle edge. It shows real app icons, a dot under running apps, and pinned apps from `desktop.conf`.
 - **Notifications:** banners at the top right for about 5 seconds. Do Not Disturb keeps them in the list without the banner.
 - **Agent approvals:** `grace-approve AGENT COMMAND [CWD]` shows "Claude Code wants to run `npm install express` in ~/graceos" with Allow once, Deny and Details. See below.
@@ -36,15 +40,17 @@ These screenshots come from a VMware VM without 3D acceleration (software render
   - Animations (Off, Calm, Smooth or Snappy), which also follow the system's reduce-motion setting.
   - Dock behavior.
   - Links to get themes and to edit the config file.
-- **Startup fallback:**
-  - If Hyprland can't start because there's no GPU acceleration, the session retries with software rendering and turns off blur, shadows and animations so it stays usable.
-  - If the shell can't use the GPU while Hyprland can (VMware with 3D on, for example), the shell alone switches to software rendering.
+- **Low-end and VM friendly:**
+  - Lite mode turns off blur, shadows and animations when Hyprland draws on the CPU or the PC has less than 4 GB of RAM.
+  - If Hyprland can't start because there's no GPU acceleration, the session retries with software rendering.
+  - On VMware with 3D on, Hyprland keeps the GPU but rejects apps' GPU buffers, so the shell and apps draw on the CPU there.
 
 ## Not built yet
 - macOS-style title bars on every window. Hyprland doesn't draw title bars. GTK apps get their buttons on the left; other apps have none yet. The likely path is the `hyprbars` plugin.
 - Settings pages other than Appearance. They're listed, but they say they aren't ready.
 - The inline AI hint in the terminal, and AI summaries of notifications.
-- Lock screen, idle handling, a polkit agent, and a light theme for the shell itself. Light style only affects apps.
+- A polkit agent (password prompts for system actions), and a light theme for the shell itself. Light style only affects apps.
+- Restarting the shell while the screen is locked leaves Hyprland's "lockscreen app died" page; unlock from another console (Ctrl+Alt+F3).
 
 ## Install
 
@@ -59,7 +65,7 @@ Install these with your package manager (or build them from source if yours are 
 
 | Needed | Optional |
 |---|---|
-| Hyprland, Quickshell, Qt 6 SVG, Inter font, Adwaita cursors, xdg-utils, make | a terminal (Konsole is the default and gets a Grace profile), Fira Code, NetworkManager, BlueZ, PipeWire + WirePlumber, UPower, power-profiles-daemon, brightnessctl, hyprsunset, grim, libnotify, xdg-desktop-portal-hyprland, Ollama |
+| Hyprland, hypridle, Quickshell, Qt 6 SVG, Inter and Fira Code fonts, Adwaita cursors, xdg-utils, make; for CandySole: Python GObject, GTK 4, libadwaita, VTE for GTK 4 | CherryCola (+ Ollama or LM Studio), NetworkManager, BlueZ, PipeWire + WirePlumber, UPower, power-profiles-daemon, brightnessctl, hyprsunset, grim, libnotify, xdg-desktop-portal-hyprland |
 
 ```
 sudo make install            # PREFIX=/usr by default; DESTDIR is supported for packaging
@@ -74,8 +80,9 @@ Pick **Grace Candyland** in your display manager, or run `grace-candyland` from 
 |---|---|
 | Super+Space | Ask Grace / search apps |
 | Super+N | Control center |
+| Super+L | Lock the screen |
 | Super+I | Settings |
-| Super+Return or Super+T | Terminal |
+| Super+Return or Super+T | Terminal (CandySole) |
 | Super+E | Files |
 | Super+Q | Close window |
 | Super+F / Super+M | Fullscreen / maximize |
@@ -108,7 +115,8 @@ sh tests/approve.sh            # grace-approve round trip against the running sh
 - `shell/config/`: settings file and design tokens.
 - `shell/services/`: compositor sync, approvals, notifications, system status.
 - `shell/widgets/`: shared controls and the line icons.
-- `shell/modules/`: bar, control center, launcher, dock, popups, Settings, wallpaper.
+- `shell/modules/`: bar, control center, launcher, dock, popups, lock screen, Settings, wallpaper.
+- `apps/candysole/`: the terminal (`python -m pytest apps/candysole` tests its helpers).
 
 The design is in the GraceOS repo: `docs/design/2026-10-19-grace-shell-design.md`.
 

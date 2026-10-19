@@ -21,6 +21,12 @@ Singleton {
         ccOpen = false;
         launcherOpen = !launcherOpen;
     }
+    signal lockRequested
+    function lock() {
+        ccOpen = false;
+        launcherOpen = false;
+        lockRequested();
+    }
     function openSettings() {
         ccOpen = false;
         launcherOpen = false;

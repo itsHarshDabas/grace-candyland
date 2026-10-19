@@ -1,5 +1,5 @@
 #!/bin/sh
-# grace-launch terminal | files | editor FILE | screenshot
+# grace-launch terminal | run CMD [ARGS...] | files | editor FILE | screenshot
 # Opens the app set in desktop.conf, or the first one installed, so keybindings work on any distro.
 
 conf=${XDG_CONFIG_HOME:-$HOME/.config}/grace/desktop.conf
@@ -18,10 +18,20 @@ missing() {
 case ${1:-} in
 terminal)
     t=$(pref terminal)
-    [ -n "$t" ] || t=$(first konsole kitty ghostty alacritty wezterm foot kgx gnome-terminal xterm) || missing terminal
-    # Konsole without its toolbars: Copy, Paste and the rest are in the right-click menu.
-    [ "$t" = konsole ] && exec konsole --hide-toolbars
+    [ -n "$t" ] || t=$(first candysole konsole kitty ghostty alacritty wezterm foot kgx gnome-terminal xterm) || missing terminal
     exec "$t"
+    ;;
+run)
+    # Run a command in the user's terminal; terminals disagree on how to pass it.
+    shift
+    t=$(pref terminal)
+    [ -n "$t" ] || t=$(first candysole konsole kitty ghostty alacritty wezterm foot kgx gnome-terminal xterm) || missing terminal
+    case $t in
+    kitty | foot) exec "$t" "$@" ;;
+    kgx | gnome-terminal) exec "$t" -- "$@" ;;
+    wezterm) exec wezterm start -- "$@" ;;
+    *) exec "$t" -e "$@" ;;
+    esac
     ;;
 files)
     f=$(first nautilus thunar dolphin nemo pcmanfm-qt pcmanfm) || missing "file manager"
@@ -39,7 +49,7 @@ screenshot)
     grim "$file" && notify-send -a Screenshot -i "$file" "Screenshot saved" "$file"
     ;;
 *)
-    echo "usage: grace-launch terminal | files | editor FILE | screenshot" >&2
+    echo "usage: grace-launch terminal | run CMD [ARGS...] | files | editor FILE | screenshot" >&2
     exit 2
     ;;
 esac

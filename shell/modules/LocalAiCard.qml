@@ -7,12 +7,12 @@ import qs.services
 import qs.widgets
 
 // "Local AI · on this device": the master AI switch, the running model and the active agent.
-// The model row reads `ollama ps` when Ollama is installed; otherwise it says nothing is running.
+// The model row reads `cherrycola status --json` (Ollama or LM Studio); without CherryCola it says nothing is running.
 Rectangle {
     id: root
     property bool active
     property string model: ""
-    property string modelSize: ""
+    property string backend: ""
 
     implicitHeight: col.implicitHeight + 24
     radius: Theme.radiusXl
@@ -27,12 +27,15 @@ Rectangle {
     }
     Process {
         id: ps
-        command: ["sh", "-c", "command -v ollama >/dev/null && ollama ps 2>/dev/null | sed -n 2p"]
+        command: ["sh", "-c", "command -v cherrycola >/dev/null && cherrycola status --json"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const f = text.trim().split(/\s{2,}/);
-                root.model = f[0] || "";
-                root.modelSize = f[2] || "";
+                let s = {};
+                try {
+                    s = JSON.parse(text);
+                } catch (e) {}
+                root.model = s.running || "";
+                root.backend = s.backend || "";
             }
         }
     }
@@ -74,13 +77,13 @@ Rectangle {
             spacing: 8
             T {
                 Layout.fillWidth: true
-                text: root.model ? `${Approvals.esc(root.model)}  <font color="${Theme.textTertiary}">· ${Approvals.esc(root.modelSize)}</font>` : "No model running"
+                text: root.model ? `${Approvals.esc(root.model)}  <font color="${Theme.textTertiary}">· CherryCola</font>` : "No model running"
                 textFormat: Text.StyledText
                 color: root.model ? Theme.text : Theme.textTertiary
                 font.pixelSize: 12
             }
             Button {
-                visible: root.model !== ""
+                visible: root.model !== "" && root.backend === "ollama"
                 text: "Stop"
                 onClicked: Quickshell.execDetached(["ollama", "stop", root.model])
             }

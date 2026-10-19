@@ -2,13 +2,14 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Widgets
 import qs.config
 import qs.services
 import qs.widgets
 
-// "Ask Grace" (Super+Space): app search first. With AI on, the last row hands the question to
-// `ask_command` from desktop.conf; without one configured it says so instead of pretending.
+// "Ask Grace" (Super+Space): app search first. With AI on, the last row asks `ask_command` from
+// desktop.conf (CherryCola by default) and streams its answer into the panel.
 PanelWindow {
     id: win
     required property var bar
@@ -16,6 +17,8 @@ PanelWindow {
     property string query: ""
     property int current: 0
     property string note: ""
+    property string answer: ""
+    property bool modelMissing: false
 
     readonly property var apps: {
         const q = query.trim().toLowerCase();
@@ -58,6 +61,7 @@ PanelWindow {
         if (open) {
             query = "";
             note = "";
+            answer = "";
             current = 0;
             input.forceActiveFocus();
         }
@@ -65,19 +69,39 @@ PanelWindow {
     onQueryChanged: {
         current = 0;
         note = "";
+        answer = "";
+        modelMissing = false;
+        asker.running = false;
+    }
+
+    // The ask command gets the question as its last argument and prints the answer to stdout.
+    Process {
+        id: asker
+        stdout: SplitParser {
+            splitMarker: "" // every chunk as it arrives, so the answer streams in
+            onRead: data => win.answer += data
+        }
+        stderr: StdioCollector {
+            id: askErr
+        }
+        onExited: code => {
+            win.modelMissing = code === 3; // CherryCola: the model isn't downloaded yet
+            if (code === 127)
+                win.note = "CherryCola isn't installed. Install it, or set ask_command in ~/.config/grace/desktop.conf.";
+            else if (code !== 0)
+                win.note = askErr.text.trim().replace(/^CherryCola: /, "") || `The ask command failed (exit ${code}).`;
+        }
     }
 
     function activate(i) {
         if (i < apps.length) {
             apps[i].execute();
             Ui.launcherOpen = false;
-        } else if (askRow) {
-            if (!Config.askCommand) {
-                note = "No local model is set up yet. Set ask_command in ~/.config/grace/desktop.conf.";
-                return;
-            }
-            Quickshell.execDetached(["sh", "-c", Config.askCommand + ' "$1"', "sh", query.trim()]);
-            Ui.launcherOpen = false;
+        } else if (askRow && !asker.running) {
+            answer = "";
+            note = "";
+            asker.command = ["sh", "-c", Config.askCommand + ' "$1"', "sh", query.trim()];
+            asker.running = true;
         }
     }
 
@@ -122,6 +146,7 @@ PanelWindow {
                     anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     text: win.query
+                    clip: true // long questions scroll inside the field, not under the icon
                     onTextEdited: win.query = text
                     color: Theme.textStrong
                     selectionColor: Theme.accent.fill
@@ -218,6 +243,41 @@ PanelWindow {
                     hoverEnabled: true
                     onEntered: win.current = win.apps.length
                     onClicked: win.activate(win.apps.length)
+                }
+            }
+            Flickable {
+                visible: win.answer !== "" || asker.running
+                width: parent.width
+                height: Math.min(answerText.implicitHeight, 320)
+                contentHeight: answerText.implicitHeight
+                clip: true
+                // Follow the answer while it streams in.
+                onContentHeightChanged: if (asker.running) contentY = Math.max(0, contentHeight - height)
+                TextEdit {
+                    id: answerText
+                    width: parent.width
+                    leftPadding: 14
+                    rightPadding: 14
+                    topPadding: 8
+                    bottomPadding: 8
+                    text: win.answer.trim() || "Thinking…"
+                    readOnly: true
+                    selectByMouse: true
+                    wrapMode: TextEdit.Wrap
+                    textFormat: TextEdit.PlainText
+                    color: win.answer ? Theme.text : Theme.textTertiary
+                    selectionColor: Theme.accent.fill
+                    font.family: Theme.font
+                    font.pixelSize: 14
+                }
+            }
+            Button {
+                visible: win.modelMissing
+                x: 14
+                text: "Download the model"
+                onClicked: {
+                    Quickshell.execDetached(["grace-launch", "run", "cherrycola", "pull"]);
+                    Ui.launcherOpen = false;
                 }
             }
             T {
