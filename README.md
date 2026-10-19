@@ -59,7 +59,7 @@ Install these with your package manager (or build them from source if yours are 
 
 | Needed | Optional |
 |---|---|
-| Hyprland, Quickshell, Qt 6 SVG, Inter font, Adwaita cursors, xdg-utils, make | a terminal (foot is the default), Fira Code, NetworkManager, BlueZ, PipeWire + WirePlumber, UPower, power-profiles-daemon, brightnessctl, hyprsunset, grim, libnotify, xdg-desktop-portal-hyprland, Ollama |
+| Hyprland, Quickshell, Qt 6 SVG, Inter font, Adwaita cursors, xdg-utils, make | a terminal (Konsole is the default and gets a Grace profile), Fira Code, NetworkManager, BlueZ, PipeWire + WirePlumber, UPower, power-profiles-daemon, brightnessctl, hyprsunset, grim, libnotify, xdg-desktop-portal-hyprland, Ollama |
 
 ```
 sudo make install            # PREFIX=/usr by default; DESTDIR is supported for packaging

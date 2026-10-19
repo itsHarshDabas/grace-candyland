@@ -6,6 +6,8 @@ data=@DATADIR@
 cfg=${XDG_CONFIG_HOME:-$HOME/.config}/grace
 mkdir -p "$cfg"
 [ -e "$cfg/desktop.conf" ] || cp "$data/desktop.conf" "$cfg/desktop.conf"
+# Konsole: the Grace profile and no menu bar, unless the user already has a Konsole setup.
+[ -e "${XDG_CONFIG_HOME:-$HOME/.config}/konsolerc" ] || cp "$data/konsolerc" "${XDG_CONFIG_HOME:-$HOME/.config}/konsolerc"
 [ -e "$cfg/hyprland.conf" ] || printf '# Your own Hyprland settings. Loaded after the Grace defaults, so they win.\n' >"$cfg/hyprland.conf"
 
 export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=grace-candyland XDG_SESSION_TYPE=wayland

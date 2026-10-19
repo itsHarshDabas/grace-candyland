@@ -13,13 +13,16 @@ install:
 	install -Dm644 data/grace-candyland.desktop "$(DESTDIR)$(PREFIX)/share/wayland-sessions/grace-candyland.desktop"
 	install -Dm644 data/grace-settings.desktop "$(DESTDIR)$(PREFIX)/share/applications/grace-settings.desktop"
 	install -Dm644 data/icons/grace-settings.svg "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg"
+	install -Dm644 data/konsole/konsolerc "$(DESTDIR)$(DATADIR)/konsolerc"
+	install -Dm644 -t "$(DESTDIR)$(PREFIX)/share/konsole" data/konsole/Grace.profile data/konsole/Grace.colorscheme
 
 uninstall:
 	rm -rf "$(DESTDIR)$(DATADIR)"
 	for b in $(BINS); do rm -f "$(DESTDIR)$(PREFIX)/bin/$$b"; done
 	rm -f "$(DESTDIR)$(PREFIX)/share/wayland-sessions/grace-candyland.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/applications/grace-settings.desktop" \
-	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg"
+	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg" \
+	      "$(DESTDIR)$(PREFIX)/share/konsole/Grace.profile" "$(DESTDIR)$(PREFIX)/share/konsole/Grace.colorscheme"
 
 # Static checks; tests/approve.sh additionally needs a running session.
 # The config sources ~/.config/grace/hyprland.conf (grace-candyland creates it), so give it an empty one.

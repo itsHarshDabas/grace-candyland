@@ -34,7 +34,9 @@ Singleton {
     }
 
     function setColorScheme() {
-        Quickshell.execDetached(["sh", "-c", "command -v gsettings >/dev/null && gsettings set org.gnome.desktop.interface color-scheme \"$1\"", "sh", Config.style === "light" ? "default" : "prefer-dark"]);
+        const dark = Config.style !== "light";
+        // GTK 3 and Qt apps ignore color-scheme and follow the GTK 3 theme, so switch Adwaita too; any other theme the user picked stays.
+        Quickshell.execDetached(["sh", "-c", "command -v gsettings >/dev/null || exit 0; gsettings set org.gnome.desktop.interface color-scheme \"$1\"; case $(gsettings get org.gnome.desktop.interface gtk-theme) in \"'Adwaita'\"|\"'Adwaita-dark'\") gsettings set org.gnome.desktop.interface gtk-theme \"$2\" ;; esac", "sh", dark ? "prefer-dark" : "default", dark ? "Adwaita-dark" : "Adwaita"]);
     }
 
     Timer {

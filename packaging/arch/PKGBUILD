@@ -9,7 +9,7 @@ license=(LicenseRef-unspecified)
 depends=(hyprland quickshell qt6-svg inter-font adwaita-cursors xdg-utils)
 makedepends=(git make)
 optdepends=(
-  'foot: terminal (or any other)'
+  'konsole: terminal, with the Grace profile (or any other)'
   'ttf-fira-code: monospace font in approval prompts'
   'networkmanager: Wi-Fi toggle'
   'bluez: Bluetooth toggle'

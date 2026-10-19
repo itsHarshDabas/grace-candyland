@@ -18,7 +18,9 @@ missing() {
 case ${1:-} in
 terminal)
     t=$(pref terminal)
-    [ -n "$t" ] || t=$(first foot kitty alacritty wezterm ghostty kgx gnome-terminal konsole xterm) || missing terminal
+    [ -n "$t" ] || t=$(first konsole kitty ghostty alacritty wezterm foot kgx gnome-terminal xterm) || missing terminal
+    # Konsole without its toolbars: Copy, Paste and the rest are in the right-click menu.
+    [ "$t" = konsole ] && exec konsole --hide-toolbars
     exec "$t"
     ;;
 files)
