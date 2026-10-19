@@ -23,4 +23,5 @@ start=$(date +%s)
 Hyprland --config "$data/hyprland.conf" && exit 0
 [ $(($(date +%s) - start)) -lt 15 ] || exit 1
 echo "grace-candyland: Hyprland failed to start, retrying with software rendering" >&2
-LIBGL_ALWAYS_SOFTWARE=1 exec Hyprland --config "$data/hyprland.conf"
+# GRACE_SOFTWARE_RENDERING tells the shell to turn off blur, shadows and animations.
+LIBGL_ALWAYS_SOFTWARE=1 GRACE_SOFTWARE_RENDERING=1 exec Hyprland --config "$data/hyprland.conf"

@@ -36,7 +36,9 @@ These screenshots come from a VMware VM without 3D acceleration (software render
   - Animations (Off, Calm, Smooth or Snappy), which also follow the system's reduce-motion setting.
   - Dock behavior.
   - Links to get themes and to edit the config file.
-- **Startup fallback:** if Hyprland can't start because there's no GPU acceleration, the session retries with software rendering.
+- **Startup fallback:**
+  - If Hyprland can't start because there's no GPU acceleration, the session retries with software rendering and turns off blur, shadows and animations so it stays usable.
+  - If the shell can't use the GPU while Hyprland can (VMware with 3D on, for example), the shell alone switches to software rendering.
 
 ## Not built yet
 - macOS-style title bars on every window. Hyprland doesn't draw title bars. GTK apps get their buttons on the left; other apps have none yet. The likely path is the `hyprbars` plugin.
