@@ -96,6 +96,8 @@ Rectangle {
             Button {
                 text: "Allow once"
                 primary: true
+                enabled: root.expanded || !cmd.truncated
+                opacity: enabled ? 1 : 0.4
                 onClicked: Approvals.answer(root.request, true)
             }
             Button {

@@ -179,7 +179,7 @@ PanelWindow {
                             anchors.right: parent.right
                             anchors.rightMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            text: appRow.modelData.name + (appRow.modelData.genericName ? `  <font color="${Theme.textTertiary}">${appRow.modelData.genericName}</font>` : "")
+                            text: Approvals.esc(appRow.modelData.name) + (appRow.modelData.genericName ? `  <font color="${Theme.textTertiary}">${Approvals.esc(appRow.modelData.genericName)}</font>` : "")
                             textFormat: Text.StyledText
                         }
                         MouseArea {

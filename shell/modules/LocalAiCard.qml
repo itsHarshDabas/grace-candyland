@@ -74,7 +74,7 @@ Rectangle {
             spacing: 8
             T {
                 Layout.fillWidth: true
-                text: root.model ? `${root.model}  <font color="${Theme.textTertiary}">· ${root.modelSize}</font>` : "No model running"
+                text: root.model ? `${Approvals.esc(root.model)}  <font color="${Theme.textTertiary}">· ${Approvals.esc(root.modelSize)}</font>` : "No model running"
                 textFormat: Text.StyledText
                 color: root.model ? Theme.text : Theme.textTertiary
                 font.pixelSize: 12
@@ -91,7 +91,7 @@ Rectangle {
             T {
                 Layout.fillWidth: true
                 readonly property var req: Approvals.current
-                text: req ? `${req.agent}  <font color="${Theme.textTertiary}">· waiting for your approval</font>` : "No agent running"
+                text: req ? `${Approvals.esc(req.agent)}  <font color="${Theme.textTertiary}">· waiting for your approval</font>` : "No agent running"
                 textFormat: Text.StyledText
                 color: req ? Theme.text : Theme.textTertiary
                 font.pixelSize: 12

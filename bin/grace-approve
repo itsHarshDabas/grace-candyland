@@ -20,7 +20,7 @@ mkfifo -m 600 "$fifo" || exit 2
 trap 'rm -f "$fifo"; qs -p "$shell" ipc call approvals cancel "$id" >/dev/null 2>&1' EXIT
 trap 'exit 1' INT TERM HUP
 
-if ! qs -p "$shell" ipc call approvals request "$id" "$agent" "$cmd" "$cwd" "$fifo" >/dev/null 2>&1; then
+if ! qs -p "$shell" ipc call approvals request "$id" "$agent" "$cmd" "$cwd" >/dev/null 2>&1; then
     echo "grace-approve: the Grace shell isn't running, so the request is denied" >&2
     exit 2
 fi
