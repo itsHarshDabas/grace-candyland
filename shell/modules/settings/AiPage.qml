@@ -38,6 +38,19 @@ ColumnLayout {
         running: true
         onTriggered: status.running = true
     }
+    // What suits this PC (`cherrycola recommend --json`), read once.
+    property var rec: ({})
+    Process {
+        running: true
+        command: ["sh", "-c", "command -v cherrycola >/dev/null && cherrycola recommend --json"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    page.rec = JSON.parse(text);
+                } catch (e) {}
+            }
+        }
+    }
     // Run a cherrycola command, then refresh.
     Process {
         id: action
@@ -112,6 +125,30 @@ ColumnLayout {
                     primary: true
                     onClicked: Quickshell.execDetached(["grace-launch", "run", "cherrycola", "pull", page.s.model])
                 }
+            }
+        }
+    }
+
+    SettingsBox {
+        visible: page.installed && !!page.rec.recommended
+        SettingsRow {
+            readonly property bool have: (page.s.models ?? []).includes(page.rec.recommended)
+            title: "Suggested for this PC"
+            description: `${page.rec.recommended} runs well on this ${page.rec.runs_on === "gpu" ? "graphics card" : "processor"}`
+            Button {
+                visible: page.rec.recommended !== page.s.model || !parent.have
+                text: parent.have ? "Use" : "Download"
+                onClicked: parent.have ? page.run(["use", page.rec.recommended], "model") : Quickshell.execDetached(["grace-launch", "run", "cherrycola", "pull", page.rec.recommended])
+            }
+        }
+        SettingsRow {
+            visible: !!page.rec.engine && page.rec.engine !== "ollama"
+            title: "Use the graphics card"
+            description: page.rec.engine_installed ? `${page.rec.engine} is installed` : `${page.rec.engine_reason}. Installs ${page.rec.engine}.`
+            Button {
+                visible: !page.rec.engine_installed
+                text: "Install"
+                onClicked: Quickshell.execDetached(["grace-launch", "run", "sudo", "pacman", "-S", "--needed", page.rec.engine])
             }
         }
     }
