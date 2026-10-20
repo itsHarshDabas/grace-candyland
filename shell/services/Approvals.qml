@@ -9,6 +9,7 @@ Singleton {
     id: root
 
     property var pending: [] // [{ id, agent, command, cwd, reply }]
+    property var history: [] // the last 20 answers, newest first: [{ agent, command, allowed, time }]
     readonly property var current: pending.length ? pending[0] : null
     readonly property string replyDir: Quickshell.env("XDG_RUNTIME_DIR") + "/grace/approvals/"
 
@@ -25,6 +26,7 @@ Singleton {
         // reply is always replyDir + a validated id (see request), never a path a caller picks.
         Quickshell.execDetached(["sh", "-c", "[ -p \"$2\" ] && timeout 5 sh -c 'printf %s \"$1\" > \"$2\"' sh \"$1\" \"$2\"", "sh", allow ? "allow" : "deny", req.reply]);
         pending = pending.filter(p => p.id !== req.id);
+        history = [{ agent: req.agent, command: req.command, allowed: allow, time: new Date() }].concat(history).slice(0, 20);
     }
 
     IpcHandler {

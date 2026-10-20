@@ -8,6 +8,7 @@ Singleton {
     property bool ccOpen: false
     property bool launcherOpen: false
     property bool settingsOpen: false
+    property string settingsPage: "Appearance"
     readonly property string screenName: Hyprland.focusedMonitor?.name ?? ""
 
     function onScreen(screen) {
@@ -27,7 +28,9 @@ Singleton {
         launcherOpen = false;
         lockRequested();
     }
-    function openSettings() {
+    function openSettings(page) {
+        if (page)
+            settingsPage = page;
         ccOpen = false;
         launcherOpen = false;
         settingsOpen = true;

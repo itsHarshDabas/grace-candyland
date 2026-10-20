@@ -24,7 +24,8 @@ uninstall:
 	rm -f "$(DESTDIR)$(PREFIX)/share/wayland-sessions/grace-candyland.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/applications/grace-settings.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg" \
-	      "$(DESTDIR)$(PREFIX)/bin/candysole" "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CandySole.desktop" 	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CandySole.svg"
+	      "$(DESTDIR)$(PREFIX)/bin/candysole" "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CandySole.desktop" \
+	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CandySole.svg"
 
 # Static checks; tests/approve.sh additionally needs a running session.
 # The config sources ~/.config/grace/hyprland.conf (grace-candyland creates it), so give it an empty one,
@@ -32,7 +33,7 @@ uninstall:
 check:
 	shellcheck bin/* tests/*.sh
 	tmp=$$(mktemp -d) && $(MAKE) -s install DESTDIR=$$tmp && \
-	  mkdir -p $$tmp/home/.config/grace && touch $$tmp/home/.config/grace/hyprland.conf && \
+	  mkdir -p $$tmp/home/.config/grace && touch $$tmp/home/.config/grace/hyprland.conf $$tmp/home/.config/grace/monitors.conf && \
 	  mkdir -m700 $$tmp/run && HOME=$$tmp/home XDG_RUNTIME_DIR=$$tmp/run Hyprland --verify-config --config $$tmp$(DATADIR)/hyprland.conf; s=$$?; rm -rf $$tmp; exit $$s
 
 .PHONY: install uninstall check

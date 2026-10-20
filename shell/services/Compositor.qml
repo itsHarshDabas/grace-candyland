@@ -29,8 +29,37 @@ Singleton {
         }
         if (c.layout === "float")
             kw.push("windowrule float on, match:class .*");
+        kw.push(...inputKeywords());
         appliedLayout = c.layout;
         Quickshell.execDetached(["hyprctl", "--batch", kw.map(k => "keyword " + k).join(" ; ")]);
+    }
+
+    // Behaviour and input options, only for keys desktop.conf sets (see Config.has).
+    function inputKeywords() {
+        const c = Config;
+        const kw = [];
+        const on = b => b ? 1 : 0;
+        if (c.has("follow_mouse"))
+            kw.push(`input:follow_mouse ${on(c.followMouse)}`);
+        if (c.has("tiling"))
+            kw.push(`general:layout ${c.tiling === "master" ? "master" : "dwindle"}`);
+        if (c.has("snap"))
+            kw.push(`general:snap:enabled ${on(c.snap)}`);
+        if (c.has("kb_layout") || c.has("layout_switch") || c.has("caps_lock")) {
+            const opts = [{ alt_shift: "grp:alt_shift_toggle", ctrl_shift: "grp:ctrl_shift_toggle", caps: "grp:caps_toggle" }[c.layoutSwitch], { escape: "caps:escape", ctrl: "ctrl:nocaps" }[c.capsLock]].filter(o => o);
+            kw.push(`input:kb_layout ${c.kbLayout.replace(/[^a-z,]/g, "") || "us"}`, `input:kb_options ${opts.join(",") || "[[EMPTY]]"}`);
+        }
+        if (c.has("repeat_delay"))
+            kw.push(`input:repeat_delay ${c.repeatDelay}`);
+        if (c.has("repeat_rate"))
+            kw.push(`input:repeat_rate ${c.repeatRate}`);
+        if (c.has("pointer_speed"))
+            kw.push(`input:sensitivity ${c.pointerSpeed.toFixed(2)}`);
+        if (c.has("natural_scroll"))
+            kw.push(`input:touchpad:natural_scroll ${on(c.naturalScroll)}`);
+        if (c.has("tap_to_click"))
+            kw.push(`input:touchpad:tap-to-click ${on(c.tapToClick)}`);
+        return kw;
     }
 
     function setColorScheme() {
@@ -70,8 +99,14 @@ Singleton {
         }
     }
     Process {
-        command: ["hyprsunset", "-t", "4500"]
+        id: sunset
+        command: ["hyprsunset", "-t", String(Config.nightLightTemp)]
         running: Config.nightLight
+        // A new temperature needs a restart; hyprsunset reads it only at start.
+        onCommandChanged: if (running) {
+            running = false;
+            Qt.callLater(() => sunset.running = Qt.binding(() => Config.nightLight));
+        }
     }
 
     Component.onCompleted: {

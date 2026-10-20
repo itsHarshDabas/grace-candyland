@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import qs.config
 import qs.services
 import qs.modules
 
@@ -67,14 +68,21 @@ ShellRoot {
         function lock(): void {
             Ui.lock();
         }
+        function beforeSleep(): void {
+            if (Config.lockBeforeSleep)
+                Ui.lock();
+        }
     }
     IpcHandler {
         target: "settings"
         function open(): void {
             Ui.openSettings();
         }
+        function openPage(page: string): void {
+            Ui.openSettings(page);
+        }
     }
 
     // Singletons load lazily; touch the ones that must run from the start.
-    Component.onCompleted: [Compositor.reduceMotion, Approvals.pending, Notifs.list]
+    Component.onCompleted: [Compositor.reduceMotion, Approvals.pending, Notifs.list, Idle]
 }

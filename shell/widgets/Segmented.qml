@@ -4,8 +4,8 @@ import qs.config
 Rectangle {
     id: root
     property var options: []      // [{ value, label }]
-    property string current
-    signal picked(string value)
+    property var current
+    signal picked(var value)
 
     implicitWidth: row.implicitWidth + 6
     implicitHeight: 32

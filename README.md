@@ -8,6 +8,8 @@ The desktop of [GraceOS](https://github.com/itsHarshDabas/GraceOS): GNOME's calm
 ![Settings and an agent approval request](docs/screenshots/settings-and-approval.png)
 ![Lock screen](docs/screenshots/lock-screen.png)
 ![CandySole with its right-click menu](docs/screenshots/candysole.png)
+![Settings: Displays](docs/screenshots/settings-displays.png)
+![Settings: Keyboard & Shortcuts](docs/screenshots/settings-keyboard.png)
 
 These screenshots come from a VMware VM without 3D acceleration (software rendering).
 
@@ -29,17 +31,26 @@ These screenshots come from a VMware VM without 3D acceleration (software render
   - The Local AI card: master AI switch, the running Ollama model with Stop, and the agent waiting on you.
   - Notifications, with pending approvals pinned on top.
 - **Ask Grace** (Super+Space) searches your apps. With AI on, the last row asks [CherryCola](https://github.com/itsHarshDabas/GraceOS/tree/main/services/cherrycola), GraceOS's local model (Ollama or LM Studio), and streams the answer into the panel. If the model isn't downloaded yet, it offers a button to download it. Set `ask_command` in `desktop.conf` to use something else.
-- **Lock screen, "Goodness GraceOS":** Super+L, the Lock button in the control center, after 10 minutes idle and before sleep (hypridle). It shows the time, the date, your name and a password field, and checks the password with PAM. It uses the compositor's session lock, so if the shell crashes while locked, the screen stays locked.
+- **Lock screen, "Goodness GraceOS":** Super+L, the Lock button in the control center, after 10 minutes idle (adjustable in Settings) and before sleep. It shows the time, the date, your name and a password field, and checks the password with PAM. It uses the compositor's session lock, so if the shell crashes while locked, the screen stays locked.
 - **CandySole**, the GraceOS terminal (`apps/candysole`, GTK 4 + VTE): tabs, a right-click menu (Copy, Paste, Select All, New Tab, New Window, Open in Files, zoom), clickable links, Grace colors and Fira Code. `candysole -e CMD` runs a command.
 - **Dock:** hidden until the pointer touches the bottom-middle edge. It shows real app icons, a dot under running apps, and pinned apps from `desktop.conf`.
 - **Notifications:** banners at the top right for about 5 seconds. Do Not Disturb keeps them in the list without the banner.
 - **Agent approvals:** `grace-approve AGENT COMMAND [CWD]` shows "Claude Code wants to run `npm install express` in ~/graceos" with Allow once, Deny and Details. See below.
-- **Settings → Appearance:**
-  - Style (Light or Dark, for apps) and nine accent colors.
-  - Window gaps, corner roundness, background blur, and Auto-tile or Floating.
-  - Animations (Off, Calm, Smooth or Snappy), which also follow the system's reduce-motion setting.
-  - Dock behavior.
-  - Links to get themes and to edit the config file.
+- **Settings** (Super+I, or `grace-settings "Page name"`), every page working:
+  - **Wi-Fi:** on/off, networks with signal and security, join with a password, disconnect, forget; nmtui for VPNs and the rest.
+  - **Bluetooth:** on/off, your devices with battery level, connect/disconnect/forget, pair nearby devices.
+  - **Displays:** resolution and refresh rate, scale, rotation and on/off per screen (saved to `~/.config/grace/monitors.conf`), brightness, Night Light and its warmth.
+  - **Sound:** output and input device, their volume and mute, and the volume of each app playing.
+  - **Power:** power mode, battery level and health, screen-off and automatic sleep timers.
+  - **Appearance:** Light or Dark, nine accent colors, gaps, corner roundness, blur, animations, dock.
+  - **Windows & Workspaces:** Auto-tile or Floating, tiling style (split or main + stack), snapping, focus follows mouse.
+  - **Keyboard & Shortcuts:** layouts and the switch shortcut, Caps Lock behavior, key repeat, pointer speed, natural scrolling, tap to click, and every shortcut.
+  - **AI & Models:** the AI switch, CherryCola's engine (Ollama or LM Studio), server start/stop, the model in use, download and remove models.
+  - **Agents:** requests waiting for you, recent answers, which coding agents are installed, how to make one ask first.
+  - **Privacy & Security:** lock timing, lock before sleep, what's using the microphone or camera, clear recent files, SSH on/off.
+  - **Updates & Software:** check and install updates (Arch, GraceOS and the AUR), install a package, package counts.
+  - **About:** OS, kernel, desktop, CPU, memory, graphics, disk, uptime; copy them for a bug report.
+  - Things that need administrator rights (updates, SSH) open in a terminal so you can type your password; there's no polkit agent yet.
 - **Low-end and VM friendly:**
   - Lite mode turns off blur, shadows and animations when Hyprland draws on the CPU or the PC has less than 4 GB of RAM.
   - If Hyprland can't start because there's no GPU acceleration, the session retries with software rendering.
@@ -47,7 +58,6 @@ These screenshots come from a VMware VM without 3D acceleration (software render
 
 ## Not built yet
 - macOS-style title bars on every window. Hyprland doesn't draw title bars. GTK apps get their buttons on the left; other apps have none yet. The likely path is the `hyprbars` plugin.
-- Settings pages other than Appearance. They're listed, but they say they aren't ready.
 - The inline AI hint in the terminal, and AI summaries of notifications.
 - A polkit agent (password prompts for system actions), and a light theme for the shell itself. Light style only affects apps.
 - Restarting the shell while the screen is locked leaves Hyprland's "lockscreen app died" page; unlock from another console (Ctrl+Alt+F3).
@@ -94,7 +104,7 @@ Pick **Grace Candyland** in your display manager, or run `grace-candyland` from 
 | Super+Shift+Q | Log out |
 
 ## desktop.conf
-The default file (copied on first start) documents every key: `style`, `accent`, `gaps`, `rounding`, `blur`, `layout`, `animations`, `dock`, `ai`, `dnd`, `night_light`, `pinned`, and the optional `terminal`, `wallpaper` and `ask_command`.
+The default file (copied on first start) documents every key: `style`, `accent`, `gaps`, `rounding`, `blur`, `layout`, `animations`, `dock`, `ai`, `dnd`, `night_light`, `pinned`, and the optional `terminal`, `wallpaper` and `ask_command`. Settings also writes `tiling`, `snap`, `follow_mouse`, `kb_layout`, `layout_switch`, `caps_lock`, `repeat_delay`, `repeat_rate`, `pointer_speed`, `natural_scroll`, `tap_to_click`, `lock_after`, `lock_before_sleep`, `screen_off_after`, `suspend_after` and `night_light_temp`. Keyboard, pointer and window options are only pushed to Hyprland once Settings (or you) set them, so the same options in `~/.config/grace/hyprland.conf` keep working.
 
 ## Agent approvals
 ```

@@ -1,3 +1,6 @@
 #!/bin/sh
-# Open Grace Settings (it lives in the running shell).
+# Open Grace Settings (it lives in the running shell), optionally on a page: grace-settings "Wi-Fi"
+if [ $# -gt 0 ]; then
+    exec qs -p @SHELLDIR@ ipc call settings openPage "$*"
+fi
 exec qs -p @SHELLDIR@ ipc call settings open

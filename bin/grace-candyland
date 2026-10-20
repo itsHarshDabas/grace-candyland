@@ -6,6 +6,7 @@ data=@DATADIR@
 cfg=${XDG_CONFIG_HOME:-$HOME/.config}/grace
 mkdir -p "$cfg"
 [ -e "$cfg/desktop.conf" ] || cp "$data/desktop.conf" "$cfg/desktop.conf"
+[ -e "$cfg/monitors.conf" ] || printf '# Written by Grace Settings → Displays. One line per monitor.\n' >"$cfg/monitors.conf"
 [ -e "$cfg/hyprland.conf" ] || printf '# Your own Hyprland settings. Loaded after the Grace defaults, so they win.\n' >"$cfg/hyprland.conf"
 
 export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=grace-candyland XDG_SESSION_TYPE=wayland
