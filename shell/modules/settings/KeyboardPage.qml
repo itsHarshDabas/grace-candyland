@@ -149,7 +149,7 @@ ColumnLayout {
         }
         SettingsRow {
             title: "Add your own shortcuts"
-            description: "In ~/.config/grace/hyprland.conf, e.g. bind = SUPER, B, exec, firefox"
+            description: "In ~/.config/grace/hyprland.conf, e.g. bind = SUPER, B, exec, cottoncandy"
             link: true
             onActivated: Quickshell.execDetached(["grace-launch", "editor", Config.dir + "/hyprland.conf"])
         }
