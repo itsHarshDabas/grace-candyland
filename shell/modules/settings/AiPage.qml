@@ -65,7 +65,7 @@ ColumnLayout {
     SettingsBox {
         SettingsRow {
             title: "Local AI"
-            description: "Ask Grace answers, the Local AI card, and agent features. Off hides them all."
+            description: "Ask Grace answers, the Local AI card, Grace in CottonCandy, and agent features. Off hides them all."
             Switch {
                 checked: Config.ai
                 onToggled: Config.toggle("ai")
@@ -109,7 +109,7 @@ ColumnLayout {
         }
         SettingsRow {
             title: "Model"
-            description: page.s.installed === false ? `${page.s.model} isn't downloaded yet` : "Used by Ask Grace and cherrycola ask"
+            description: page.s.installed === false ? `${page.s.model} isn't downloaded yet` : "Used by Ask Grace, Grace in CottonCandy, and cherrycola ask"
             Row {
                 spacing: 6
                 Choice {
