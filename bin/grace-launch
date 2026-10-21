@@ -39,7 +39,7 @@ files)
     ;;
 editor)
     shift
-    e=$(first gnome-text-editor gedit kate mousepad featherpad code) && exec "$e" "$@"
+    e=$(first gnome-text-editor gedit kate mousepad featherpad twirl code) && exec "$e" "$@"
     exec xdg-open "$@"
     ;;
 screenshot)
