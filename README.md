@@ -35,6 +35,7 @@ These screenshots come from a VMware VM without 3D acceleration (software render
 - **CandySole**, the GraceOS terminal (`apps/candysole`, GTK 4 + VTE): tabs, a right-click menu (Copy, Paste, Select All, New Tab, New Window, Open in Files, zoom), clickable links, Grace colors and Fira Code. `candysole -e CMD` runs a command.
 - **Dock:** hidden until the pointer touches the bottom-middle edge. It shows real app icons, a dot under running apps, and pinned apps from `desktop.conf`.
 - **Notifications:** banners at the top right for about 5 seconds. Do Not Disturb keeps them in the list without the banner.
+- **Cortex Council** (the AI parliament, [its own repo](https://github.com/itsHarshDabas/Cortex-Council)): open it from Ask Grace or the app list and it opens in your browser, after starting its local server in the background if it isn't running yet. Right-click → Stop Cortex Council, or `grace-cortex stop`, stops it. It uses the `cortex-council` command (the GraceOS package, or `npm link` in a checkout); otherwise a checkout at `cortex_council` in `desktop.conf`, `~/Cortex-Council` or `~/cortex-council`. If it isn't installed, a notification says so.
 - **Agent approvals:** `grace-approve AGENT COMMAND [CWD]` shows "Claude Code wants to run `npm install express` in ~/graceos" with Allow once, Deny and Details. See below.
 - **Settings** (Super+I, or `grace-settings "Page name"`), every page working:
   - **Wi-Fi:** on/off, networks with signal and security, join with a password, disconnect, forget; nmtui for VPNs and the rest.
@@ -104,7 +105,7 @@ Pick **Grace Candyland** in your display manager, or run `grace-candyland` from 
 | Super+Shift+Q | Log out |
 
 ## desktop.conf
-The default file (copied on first start) documents every key: `style`, `accent`, `gaps`, `rounding`, `blur`, `layout`, `animations`, `dock`, `ai`, `dnd`, `night_light`, `pinned`, and the optional `terminal`, `wallpaper` and `ask_command`. Settings also writes `tiling`, `snap`, `follow_mouse`, `kb_layout`, `layout_switch`, `caps_lock`, `repeat_delay`, `repeat_rate`, `pointer_speed`, `natural_scroll`, `tap_to_click`, `lock_after`, `lock_before_sleep`, `screen_off_after`, `suspend_after` and `night_light_temp`. Keyboard, pointer and window options are only pushed to Hyprland once Settings (or you) set them, so the same options in `~/.config/grace/hyprland.conf` keep working.
+The default file (copied on first start) documents every key: `style`, `accent`, `gaps`, `rounding`, `blur`, `layout`, `animations`, `dock`, `ai`, `dnd`, `night_light`, `pinned`, and the optional `terminal`, `wallpaper`, `ask_command` and `cortex_council`. Settings also writes `tiling`, `snap`, `follow_mouse`, `kb_layout`, `layout_switch`, `caps_lock`, `repeat_delay`, `repeat_rate`, `pointer_speed`, `natural_scroll`, `tap_to_click`, `lock_after`, `lock_before_sleep`, `screen_off_after`, `suspend_after` and `night_light_temp`. Keyboard, pointer and window options are only pushed to Hyprland once Settings (or you) set them, so the same options in `~/.config/grace/hyprland.conf` keep working.
 
 ## Agent approvals
 ```

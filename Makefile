@@ -2,7 +2,7 @@
 PREFIX ?= /usr
 DATADIR = $(PREFIX)/share/grace-candyland
 SHELLDIR = $(DATADIR)/shell
-BINS = grace-candyland grace-launch grace-settings grace-approve
+BINS = grace-candyland grace-launch grace-settings grace-approve grace-cortex
 SUBST = sed -e 's|@DATADIR@|$(DATADIR)|g' -e 's|@SHELLDIR@|$(SHELLDIR)|g'
 
 install:
@@ -14,6 +14,8 @@ install:
 	install -Dm644 data/grace-candyland.desktop "$(DESTDIR)$(PREFIX)/share/wayland-sessions/grace-candyland.desktop"
 	install -Dm644 data/grace-settings.desktop "$(DESTDIR)$(PREFIX)/share/applications/grace-settings.desktop"
 	install -Dm644 data/icons/grace-settings.svg "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg"
+	install -Dm644 data/org.graceos.CortexCouncil.desktop "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CortexCouncil.desktop"
+	install -Dm644 data/icons/org.graceos.CortexCouncil.svg "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CortexCouncil.svg"
 	install -Dm755 apps/candysole/candysole "$(DESTDIR)$(PREFIX)/bin/candysole"
 	install -Dm644 apps/candysole/org.graceos.CandySole.desktop "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CandySole.desktop"
 	install -Dm644 apps/candysole/org.graceos.CandySole.svg "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CandySole.svg"
@@ -24,6 +26,8 @@ uninstall:
 	rm -f "$(DESTDIR)$(PREFIX)/share/wayland-sessions/grace-candyland.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/applications/grace-settings.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/grace-settings.svg" \
+	      "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CortexCouncil.desktop" \
+	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CortexCouncil.svg" \
 	      "$(DESTDIR)$(PREFIX)/bin/candysole" "$(DESTDIR)$(PREFIX)/share/applications/org.graceos.CandySole.desktop" \
 	      "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/org.graceos.CandySole.svg"
 

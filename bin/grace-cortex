@@ -1,0 +1,49 @@
+#!/bin/sh
+# grace-cortex [stop | status]
+# Opens Cortex Council, the AI parliament, in the browser, starting its local server in the
+# background first if it isn't running. Uses the cortex-council command (the GraceOS package or
+# `npm link`), else a checkout set as cortex_council in desktop.conf, ~/Cortex-Council or ~/cortex-council.
+
+conf=${XDG_CONFIG_HOME:-$HOME/.config}/grace/desktop.conf
+pref() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\([^#[:space:]]*\).*/\1/p" "$conf" 2>/dev/null | tail -n 1; }
+tell() { notify-send -a "Cortex Council" -i org.graceos.CortexCouncil "$1" "$2" 2>/dev/null || echo "$1: $2" >&2; }
+
+mode=${1:-open}
+case ${1:-} in
+'') set -- --detach ;;
+stop | status) ;;
+*)
+    echo "usage: grace-cortex [stop | status]" >&2
+    exit 2
+    ;;
+esac
+
+if command -v cortex-council >/dev/null; then
+    set -- cortex-council "$@"
+else
+    dir=$(pref cortex_council)
+    case $dir in \~/*) dir=$HOME/${dir#\~/} ;; esac
+    for d in "$dir" "$HOME/Cortex-Council" "$HOME/cortex-council"; do
+        [ -n "$d" ] && [ -f "$d/bin/cortex-council.mjs" ] && { found=$d; break; }
+    done
+    if [ -z "${found:-}" ]; then
+        # Not installed here, but it may be running anyway (started by hand, or in a container).
+        if [ "$mode" = open ] && curl -sf -o /dev/null http://127.0.0.1:7420/api/health; then
+            exec xdg-open http://127.0.0.1:7420
+        fi
+        tell "Cortex Council isn't installed" "Install the cortex-council package, or clone it and set cortex_council in desktop.conf."
+        exit 1
+    fi
+    command -v node >/dev/null || { tell "Cortex Council needs Node.js" "Install nodejs (22 or newer)."; exit 1; }
+    [ "$mode" != open ] || [ -f "$found/dist/web/index.html" ] ||
+        tell "Setting up Cortex Council" "First run: installing and building it. This takes about a minute."
+    set -- node "$found/bin/cortex-council.mjs" "$@"
+fi
+
+# Launched from the dock or Ask Grace there's no terminal, so failures become a notification.
+out=$("$@" 2>&1)
+rc=$?
+printf '%s\n' "$out"
+[ "$rc" -eq 0 ] || [ "$mode" = status ] ||
+    tell "Cortex Council didn't $mode" "$(printf '%s\n' "$out" | sed 's/^[[:space:]]*✖[[:space:]]*//' | tail -n 1)"
+exit "$rc"

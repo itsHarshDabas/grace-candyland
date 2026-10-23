@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Cortex Council
+GenericName=AI Parliament
+Comment=Models debate and plan together; nothing runs until you approve
+Exec=grace-cortex
+Icon=org.graceos.CortexCouncil
+Terminal=false
+Categories=Development;
+Keywords=ai;agents;council;parliament;claude;llm;
+Actions=stop;
+
+[Desktop Action stop]
+Name=Stop Cortex Council
+Exec=grace-cortex stop
