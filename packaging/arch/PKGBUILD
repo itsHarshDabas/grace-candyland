@@ -21,6 +21,7 @@ optdepends=(
   'grim: screenshots (Print key)'
   'libnotify: screenshot notification'
   'xdg-desktop-portal-hyprland: screen sharing and file pickers'
+  'cortex-council: the Cortex Council app (from the GraceOS repo)'
 )
 provides=(grace-candyland)
 conflicts=(grace-candyland)
