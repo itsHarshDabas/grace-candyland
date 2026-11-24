@@ -17,7 +17,7 @@ These screenshots come from a VMware VM without 3D acceleration (software render
 - **Compositor:** [Hyprland](https://hypr.land), with Grace defaults. Windows auto-tile with one gap value everywhere, rounded corners, hairline edges, soft shadows and blur.
 - **Shell:** [Quickshell](https://quickshell.org) (QML) in `shell/`. It provides the top bar, control center, launcher, dock, notifications, agent approvals and Settings.
 - **One settings file:** `~/.config/grace/desktop.conf`. The Settings app edits it and so can you. Changes apply live, and Settings only rewrites the value it changes, so your comments stay.
-- **Your own Hyprland config** goes in `~/.config/grace/hyprland.conf`. It loads last, so it wins. Themes, icon themes, cursors and Hyprland plugins from the AUR or anywhere else work as usual.
+- **Your own Hyprland config** goes in `~/.config/grace/hyprland.lua` (Hyprland 0.57 reads only Lua; an old `hyprland.conf` there is no longer loaded and needs rewriting, see the [Hyprland wiki](https://wiki.hypr.land)). It loads last, so it wins, and a mistake in it shows a notification instead of breaking the session. Themes, icon themes, cursors and Hyprland plugins from the AUR or anywhere else work as usual.
 
 ## What works
 - **Top bar:**
@@ -40,7 +40,7 @@ These screenshots come from a VMware VM without 3D acceleration (software render
 - **Settings** (Super+I, or `grace-settings "Page name"`), every page working:
   - **Wi-Fi:** on/off, networks with signal and security, join with a password, disconnect, forget; nmtui for VPNs and the rest.
   - **Bluetooth:** on/off, your devices with battery level, connect/disconnect/forget, pair nearby devices.
-  - **Displays:** resolution and refresh rate, scale, rotation and on/off per screen (saved to `~/.config/grace/monitors.conf`), brightness, Night Light and its warmth.
+  - **Displays:** resolution and refresh rate, scale, rotation and on/off per screen (saved to `~/.config/grace/monitors.lua`; screens saved by older versions in `monitors.conf` are carried over once), brightness, Night Light and its warmth.
   - **Sound:** output and input device, their volume and mute, and the volume of each app playing.
   - **Power:** power mode, battery level and health, screen-off and automatic sleep timers.
   - **Appearance:** Light or Dark, nine accent colors, gaps, corner roundness, blur, animations, dock.
@@ -105,7 +105,7 @@ Pick **Grace Candyland** in your display manager, or run `grace-candyland` from 
 | Super+Shift+Q | Log out |
 
 ## desktop.conf
-The default file (copied on first start) documents every key: `style`, `accent`, `gaps`, `rounding`, `blur`, `layout`, `animations`, `dock`, `ai`, `dnd`, `night_light`, `pinned`, and the optional `terminal`, `wallpaper`, `ask_command` and `cortex_council`. Settings also writes `tiling`, `snap`, `follow_mouse`, `kb_layout`, `layout_switch`, `caps_lock`, `repeat_delay`, `repeat_rate`, `pointer_speed`, `natural_scroll`, `tap_to_click`, `lock_after`, `lock_before_sleep`, `screen_off_after`, `suspend_after` and `night_light_temp`. Keyboard, pointer and window options are only pushed to Hyprland once Settings (or you) set them, so the same options in `~/.config/grace/hyprland.conf` keep working.
+The default file (copied on first start) documents every key: `style`, `accent`, `gaps`, `rounding`, `blur`, `layout`, `animations`, `dock`, `ai`, `dnd`, `night_light`, `pinned`, and the optional `terminal`, `wallpaper`, `ask_command` and `cortex_council`. Settings also writes `tiling`, `snap`, `follow_mouse`, `kb_layout`, `layout_switch`, `caps_lock`, `repeat_delay`, `repeat_rate`, `pointer_speed`, `natural_scroll`, `tap_to_click`, `lock_after`, `lock_before_sleep`, `screen_off_after`, `suspend_after` and `night_light_temp`. Keyboard, pointer and window options are only pushed to Hyprland once Settings (or you) set them, so the same options in `~/.config/grace/hyprland.lua` keep working.
 
 ## Agent approvals
 ```

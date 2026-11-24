@@ -149,9 +149,9 @@ ColumnLayout {
         }
         SettingsRow {
             title: "Add your own shortcuts"
-            description: "In ~/.config/grace/hyprland.conf, e.g. bind = SUPER, B, exec, cottoncandy"
+            description: "In ~/.config/grace/hyprland.lua, e.g. hl.bind(\"SUPER + B\", hl.dsp.exec_cmd(\"cottoncandy\"))"
             link: true
-            onActivated: Quickshell.execDetached(["grace-launch", "editor", Config.dir + "/hyprland.conf"])
+            onActivated: Quickshell.execDetached(["grace-launch", "editor", Config.dir + "/hyprland.lua"])
         }
     }
 }

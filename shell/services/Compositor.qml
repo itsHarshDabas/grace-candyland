@@ -16,50 +16,69 @@ Singleton {
     // window, fade and workspace speeds in Hyprland units (lower is faster)
     readonly property var speeds: ({ calm: [7, 5, 6], smooth: [4.5, 3, 4], snappy: [2.6, 2, 2.6] })
 
+    // A JS value as a Lua literal: objects become tables, strings are quoted.
+    function lua(v) {
+        if (typeof v === "string")
+            return JSON.stringify(v);
+        if (typeof v === "object")
+            return "{ " + Object.keys(v).map(k => `${/^[a-z_][a-z0-9_]*$/.test(k) ? k : `[${JSON.stringify(k)}]`} = ${lua(v[k])}`).join(", ") + " }";
+        return String(v);
+    }
+
+    // Hyprland 0.57 reads only Lua, and `hyprctl keyword` is gone: changes go through `hyprctl eval`.
     function apply() {
         const c = Config;
         const s = speeds[c.animations] || speeds.smooth;
         const g = c.gaps - c.gaps % 2; // gaps_in counts twice between windows, so keep it even
-        const kw = [`general:gaps_out ${g}`, `general:gaps_in ${g / 2}`, `decoration:rounding ${c.rounding}`, `decoration:blur:enabled ${c.blur && !lite ? 1 : 0}`, `decoration:shadow:enabled ${lite ? 0 : 1}`, `animations:enabled ${c.animations === "off" || reduceMotion || lite ? 0 : 1}`, `animation windows,1,${s[0]},grace,popin 90%`, `animation fade,1,${s[1]},graceOut`, `animation workspaces,1,${s[2]},grace,slidefade 12%`, `animation layers,1,${s[1]},grace,fade`];
         if (appliedLayout === "float" && c.layout !== "float") {
             // A window rule can't be removed at runtime: reload, and configreloaded re-applies the rest.
             appliedLayout = c.layout;
             Quickshell.execDetached(["hyprctl", "reload"]);
             return;
         }
+        const conf = {
+            general: { gaps_out: g, gaps_in: g / 2 },
+            decoration: { rounding: c.rounding, blur: { enabled: c.blur && !lite }, shadow: { enabled: !lite } },
+            animations: { enabled: !(c.animations === "off" || reduceMotion || lite) }
+        };
+        addInput(conf);
+        const code = [`hl.config(${lua(conf)})`, ...[["windows", s[0], "grace", "popin 90%"], ["fade", s[1], "graceOut", ""], ["workspaces", s[2], "grace", "slidefade 12%"], ["layers", s[1], "grace", "fade"]].map(([leaf, speed, bezier, style]) => `hl.animation(${lua(Object.assign({ leaf, enabled: true, speed, bezier }, style ? { style } : {}))})`)];
         if (c.layout === "float")
-            kw.push("windowrule float on, match:class .*");
-        kw.push(...inputKeywords());
+            code.push(`hl.window_rule(${lua({ name: "grace-float-all", match: { class: ".*" }, float: true })})`);
         appliedLayout = c.layout;
-        Quickshell.execDetached(["hyprctl", "--batch", kw.map(k => "keyword " + k).join(" ; ")]);
+        Quickshell.execDetached(["hyprctl", "eval", code.join("; ")]);
     }
 
     // Behaviour and input options, only for keys desktop.conf sets (see Config.has).
-    function inputKeywords() {
+    function addInput(conf) {
         const c = Config;
-        const kw = [];
-        const on = b => b ? 1 : 0;
+        const input = {};
+        const touchpad = {};
         if (c.has("follow_mouse"))
-            kw.push(`input:follow_mouse ${on(c.followMouse)}`);
+            input.follow_mouse = c.followMouse ? 1 : 0;
         if (c.has("tiling"))
-            kw.push(`general:layout ${c.tiling === "master" ? "master" : "dwindle"}`);
+            conf.general.layout = c.tiling === "master" ? "master" : "dwindle";
         if (c.has("snap"))
-            kw.push(`general:snap:enabled ${on(c.snap)}`);
+            conf.general.snap = { enabled: c.snap };
         if (c.has("kb_layout") || c.has("layout_switch") || c.has("caps_lock")) {
             const opts = [{ alt_shift: "grp:alt_shift_toggle", ctrl_shift: "grp:ctrl_shift_toggle", caps: "grp:caps_toggle" }[c.layoutSwitch], { escape: "caps:escape", ctrl: "ctrl:nocaps" }[c.capsLock]].filter(o => o);
-            kw.push(`input:kb_layout ${c.kbLayout.replace(/[^a-z,]/g, "") || "us"}`, `input:kb_options ${opts.join(",") || "[[EMPTY]]"}`);
+            input.kb_layout = c.kbLayout.replace(/[^a-z,]/g, "") || "us";
+            input.kb_options = opts.join(",");
         }
         if (c.has("repeat_delay"))
-            kw.push(`input:repeat_delay ${c.repeatDelay}`);
+            input.repeat_delay = c.repeatDelay;
         if (c.has("repeat_rate"))
-            kw.push(`input:repeat_rate ${c.repeatRate}`);
+            input.repeat_rate = c.repeatRate;
         if (c.has("pointer_speed"))
-            kw.push(`input:sensitivity ${c.pointerSpeed.toFixed(2)}`);
+            input.sensitivity = Number(c.pointerSpeed.toFixed(2));
         if (c.has("natural_scroll"))
-            kw.push(`input:touchpad:natural_scroll ${on(c.naturalScroll)}`);
+            touchpad.natural_scroll = c.naturalScroll;
         if (c.has("tap_to_click"))
-            kw.push(`input:touchpad:tap-to-click ${on(c.tapToClick)}`);
-        return kw;
+            touchpad.tap_to_click = c.tapToClick;
+        if (Object.keys(touchpad).length)
+            input.touchpad = touchpad;
+        if (Object.keys(input).length)
+            conf.input = input;
     }
 
     function setColorScheme() {

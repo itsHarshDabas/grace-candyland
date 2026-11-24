@@ -6,17 +6,17 @@ import qs.config
 import qs.services
 import qs.widgets
 
-// Monitors from `hyprctl monitors all -j`. Changes apply at once and are saved, one line per
-// monitor, to ~/.config/grace/monitors.conf (sourced by the Grace Hyprland config).
+// Monitors from `hyprctl monitors all -j`. Changes apply at once (`hyprctl eval`) and are saved, one
+// hl.monitor line per monitor, to ~/.config/grace/monitors.lua (loaded by the Grace Hyprland config).
 ColumnLayout {
     id: page
     readonly property string description: "Resolution, scale and rotation for each screen, plus brightness and Night Light."
     spacing: 14
 
     property var monitors: []
-    // name -> { mode, scale, transform, disabled }: what we write to monitors.conf
+    // name -> { mode, scale, transform, disabled }: what we write to monitors.lua
     property var chosen: ({})
-    readonly property string confPath: Config.dir + "/monitors.conf"
+    readonly property string confPath: Config.dir + "/monitors.lua"
 
     Process {
         id: query
@@ -53,13 +53,14 @@ ColumnLayout {
 
     function line(name) {
         const c = chosen[name];
-        return c.disabled ? `monitor = ${name}, disable` : `monitor = ${name}, ${c.mode}, auto, ${c.scale}, transform, ${c.transform}`;
+        const out = JSON.stringify(name);
+        return c.disabled ? `hl.monitor({ output = ${out}, disabled = true })` : `hl.monitor({ output = ${out}, mode = ${JSON.stringify(c.mode)}, position = "auto", scale = ${Number(c.scale)}, transform = ${Number(c.transform) | 0} })`;
     }
     function apply(name, change) {
         chosen[name] = Object.assign({}, chosen[name], change);
         chosen = Object.assign({}, chosen);
-        Quickshell.execDetached(["hyprctl", "keyword", "monitor", line(name).replace(/^monitor = /, "")]);
-        conf.setText("# Written by Grace Settings → Displays. One line per monitor.\n" + Object.keys(chosen).map(n => line(n)).join("\n") + "\n");
+        Quickshell.execDetached(["hyprctl", "eval", line(name)]);
+        conf.setText("-- Written by Grace Settings → Displays. One line per monitor.\n" + Object.keys(chosen).map(n => line(n)).join("\n") + "\n");
         requery.restart();
     }
 

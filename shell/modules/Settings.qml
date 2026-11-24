@@ -59,7 +59,7 @@ FloatingWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 onClose: Ui.settingsOpen = false
                 onMinimize: Ui.settingsOpen = false
-                onMaximize: Hyprland.dispatch("fullscreen 1")
+                onMaximize: Hyprland.dispatch('hl.dsp.window.fullscreen({ mode = "maximized" })')
             }
             T {
                 anchors.centerIn: parent

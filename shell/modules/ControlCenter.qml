@@ -103,7 +103,7 @@ PanelWindow {
                 }
                 Button {
                     text: "Log out"
-                    onClicked: Hyprland.dispatch("exit")
+                    onClicked: Hyprland.dispatch("hl.dsp.exit()")
                 }
                 Button {
                     text: "Restart"
