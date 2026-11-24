@@ -9,7 +9,7 @@ import qs.widgets
 // run `cherrycola pull` in a terminal so you see the progress).
 ColumnLayout {
     id: page
-    readonly property string description: "CherryCola runs language models on this PC, through Ollama or LM Studio. Nothing you ask leaves this device."
+    readonly property string description: "CherryCola runs language models on this PC, through Ollama, LM Studio or llama.cpp. Nothing you ask leaves this device."
     spacing: 14
 
     property var s: ({})          // last `cherrycola status --json`
@@ -77,11 +77,11 @@ ColumnLayout {
         visible: !page.installed
         SettingsRow {
             title: "CherryCola isn't installed"
-            description: "Install the cherrycola package (from the GraceOS repo) to run models locally"
+            description: "Install the cherrycolallm package (from the GraceOS repo) to run models locally"
             Button {
                 text: "Install"
                 primary: true
-                onClicked: Quickshell.execDetached(["grace-launch", "run", "sudo", "pacman", "-S", "cherrycola", "ollama"])
+                onClicked: Quickshell.execDetached(["grace-launch", "run", "sudo", "pacman", "-S", "--needed", "cherrycolallm", "ollama"])
             }
         }
     }
@@ -89,22 +89,28 @@ ColumnLayout {
     SettingsBox {
         visible: page.installed
         SettingsRow {
+            id: engineRow
             title: "Engine"
-            description: page.s.backend === "lmstudio" ? "LM Studio's local server must be running (start it in the LM Studio app)" : "Ollama starts when you ask something and runs on this PC"
+            readonly property var names: ({ ollama: "Ollama", lmstudio: "LM Studio", llamacpp: "llama.cpp" })
+            description: page.s.backend === "lmstudio" ? "LM Studio's local server must be running (start it in the LM Studio app)" : page.s.backend === "llamacpp" ? "llama.cpp loads a GGUF model from your model folders when you ask something" : "Ollama starts when you ask something and runs on this PC"
             Choice {
-                options: [{ value: "auto", label: "Automatic" }, { value: "ollama", label: "Ollama" }, { value: "lmstudio", label: "LM Studio" }]
+                options: [{ value: "auto", label: "Automatic" }, { value: "ollama", label: "Ollama" }, { value: "lmstudio", label: "LM Studio" }, { value: "llamacpp", label: "llama.cpp" }]
                 current: page.s.configured_backend ?? "auto"
-                placeholder: page.s.backend === "lmstudio" ? "LM Studio" : "Ollama"
+                placeholder: engineRow.names[page.s.backend] ?? "Ollama"
                 onPicked: v => page.run(["backend", v], "engine")
             }
         }
         SettingsRow {
+            id: serverRow
             title: "Server"
-            description: page.busy === "server" ? "Working…" : page.s.reachable ? "Running" + (page.s.running ? ` · ${page.s.running} loaded in memory` : "") : "Not running"
+            description: page.busy === "server" ? "Working…" : page.s.backend === "llamacpp" ? (!page.s.reachable ? "llama-server isn't installed" : page.s.running ? `${page.s.running} loaded in memory` : "No model loaded") : page.s.reachable ? "Running" + (page.s.running ? ` · ${page.s.running} loaded in memory` : "") : "Not running"
+            // Ollama: the server. llama.cpp: "reachable" only means llama-server is installed, so
+            // Start/Stop follow whether a model is loaded.
+            readonly property bool up: page.s.backend === "llamacpp" ? !!page.s.running : !!page.s.reachable
             Button {
-                visible: page.s.backend === "ollama"
-                text: page.s.reachable ? "Stop" : "Start"
-                onClicked: page.run([page.s.reachable ? "stop" : "start"], "server")
+                visible: page.s.backend === "ollama" || (page.s.backend === "llamacpp" && !!page.s.reachable)
+                text: serverRow.up ? "Stop" : "Start"
+                onClicked: page.run([serverRow.up ? "stop" : "start"], "server")
             }
         }
         SettingsRow {
@@ -132,13 +138,15 @@ ColumnLayout {
     SettingsBox {
         visible: page.installed && !!page.rec.recommended
         SettingsRow {
+            id: suggestedRow
             readonly property bool have: (page.s.models ?? []).includes(page.rec.recommended)
             title: "Suggested for this PC"
             description: `${page.rec.recommended} runs well on this ${page.rec.runs_on === "gpu" ? "graphics card" : "processor"}`
             Button {
-                visible: page.rec.recommended !== page.s.model || !parent.have
-                text: parent.have ? "Use" : "Download"
-                onClicked: parent.have ? page.run(["use", page.rec.recommended], "model") : Quickshell.execDetached(["grace-launch", "run", "cherrycola", "pull", page.rec.recommended])
+                // Controls sit in the row's slot, so `parent` is not the row: use its id.
+                visible: page.rec.recommended !== page.s.model || !suggestedRow.have
+                text: suggestedRow.have ? "Use" : "Download"
+                onClicked: suggestedRow.have ? page.run(["use", page.rec.recommended], "model") : Quickshell.execDetached(["grace-launch", "run", "cherrycola", "pull", page.rec.recommended])
             }
         }
         SettingsRow {

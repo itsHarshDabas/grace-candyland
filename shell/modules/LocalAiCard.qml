@@ -7,7 +7,7 @@ import qs.services
 import qs.widgets
 
 // "Local AI · on this device": the master AI switch, the running model and the active agent.
-// The model row reads `cherrycola status --json` (Ollama or LM Studio); without CherryCola it says nothing is running.
+// The model row reads `cherrycola status --json` (Ollama, LM Studio or llama.cpp); without CherryCola it says nothing is running.
 Rectangle {
     id: root
     property bool active
@@ -83,9 +83,10 @@ Rectangle {
                 font.pixelSize: 12
             }
             Button {
-                visible: root.model !== "" && root.backend === "ollama"
+                visible: root.model !== "" && (root.backend === "ollama" || root.backend === "llamacpp")
                 text: "Stop"
-                onClicked: Quickshell.execDetached(["ollama", "stop", root.model])
+                // Ollama unloads the model; for llama.cpp, CherryCola stops the llama-server it started.
+                onClicked: Quickshell.execDetached(root.backend === "ollama" ? ["ollama", "stop", root.model] : ["cherrycola", "stop"])
             }
         }
         RowLayout {

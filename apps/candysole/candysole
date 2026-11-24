@@ -122,6 +122,22 @@ def directory_from_uri(uri):
     return path or None
 
 
+def caller_directory(working_directory, caller_cwd, command=None):
+    """The directory to start in, for a call made from caller_cwd.
+
+    --working-directory is relative to the caller. Without it, a command (-e) runs where it was
+    called from, like any other program; a plain new window still opens in the home folder.
+    """
+    if working_directory:
+        expanded = os.path.expanduser(working_directory)
+        if caller_cwd and not os.path.isabs(expanded):
+            expanded = os.path.join(caller_cwd, expanded)
+        return expanded
+    if command and caller_cwd:
+        return caller_cwd
+    return None
+
+
 def exit_code_from_status(wait_status):
     if wait_status is None:
         return 0
@@ -702,8 +718,14 @@ def main(argv=None):
                 options = parse_arguments(command_line.get_arguments()[1:])
             except SystemExit as error:
                 return int(error.code or 0)
+            # A second `candysole` call is handled here, in the first one's process, whose
+            # directory may differ: relative paths, and commands, use the caller's directory.
             self.create_window(
-                options.working_directory,
+                caller_directory(
+                    options.working_directory,
+                    command_line.get_cwd(),
+                    options.command,
+                ),
                 options.command,
             )
             return 0
