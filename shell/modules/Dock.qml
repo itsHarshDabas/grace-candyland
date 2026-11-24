@@ -52,7 +52,7 @@ PanelWindow {
     function launch(entry) {
         const t = windowOf(entry);
         if (t)
-            Hyprland.dispatch(`focuswindow address:0x${t.address}`);
+            Hyprland.dispatch(`hl.dsp.focus({ window = "address:0x${t.address}" })`);
         else
             entry.execute();
     }

@@ -18,7 +18,7 @@ Singleton {
     IdleMonitor {
         enabled: Config.screenOffAfter > 0
         timeout: Config.screenOffAfter * 60
-        onIsIdleChanged: Hyprland.dispatch(isIdle ? "dpms off" : "dpms on")
+        onIsIdleChanged: Hyprland.dispatch(`hl.dsp.dpms({ action = "${isIdle ? "off" : "on"}" })`)
     }
     IdleMonitor {
         enabled: Config.suspendAfter > 0

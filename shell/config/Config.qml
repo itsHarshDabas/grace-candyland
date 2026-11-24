@@ -46,7 +46,7 @@ Singleton {
     readonly property int nightLightTemp: clamp(parseInt(get("night_light_temp", "4500")), 2500, 6000)
 
     // Whether desktop.conf sets this key; input options are only pushed to Hyprland when it does,
-    // so settings made in ~/.config/grace/hyprland.conf keep working.
+    // so settings made in ~/.config/grace/hyprland.lua keep working.
     function has(key) {
         return values[key] !== undefined && values[key] !== "";
     }

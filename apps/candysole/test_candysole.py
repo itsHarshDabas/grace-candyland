@@ -137,3 +137,11 @@ def test_safe_link_allows_only_web_and_mail():
     assert candysole.safe_link("file:///tmp/evil.desktop") is None
     assert candysole.safe_link("javascript:alert(1)") is None
     assert candysole.safe_link("") is None
+
+
+def test_caller_directory_is_relative_to_the_caller():
+    assert candysole.caller_directory("sub", "/tmp/cs") == "/tmp/cs/sub"
+    assert candysole.caller_directory("/abs", "/tmp/cs") == "/abs"
+    assert candysole.caller_directory("~", "/tmp/cs") == os.path.expanduser("~")
+    assert candysole.caller_directory(None, "/tmp/cs", ["make"]) == "/tmp/cs"
+    assert candysole.caller_directory(None, "/tmp/cs") is None

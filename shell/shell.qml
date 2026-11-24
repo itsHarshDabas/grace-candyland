@@ -32,7 +32,7 @@ ShellRoot {
         }
     }
 
-    // Bound in hyprland.conf as "global, quickshell:<name>".
+    // Bound in hyprland.lua as hl.dsp.global("quickshell:<name>").
     GlobalShortcut {
         name: "launcher"
         description: "Ask Grace / search apps"
