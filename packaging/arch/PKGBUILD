@@ -10,7 +10,7 @@ depends=(hyprland quickshell qt6-svg inter-font ttf-fira-code adwaita-cursors xd
          python-gobject gtk4 libadwaita vte4)
 makedepends=(git make)
 optdepends=(
-  'cherrycola: Ask Grace answers from a local model (from the GraceOS repo)'
+  'cherrycolallm: Ask Grace answers from a local model (from the GraceOS repo)'
   'networkmanager: Wi-Fi toggle'
   'bluez: Bluetooth toggle'
   'pipewire-pulse: volume slider (with wireplumber)'

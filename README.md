@@ -1,17 +1,26 @@
 # Grace Candyland
 
-The desktop of [GraceOS](https://github.com/itsHarshDabas/GraceOS): GNOME's calm look with Hyprland's tiling and compositor-level control, plus small, optional AI touches. It installs on any Linux distro that has Hyprland and Quickshell.
+The desktop of [GraceOS](https://github.com/itsHarshDabas/GraceOS): GNOME's calm look with Hyprland's tiling and compositor-level control, plus small, optional AI touches. It runs on GraceOS, on a plain Arch install, and on any other Linux distro that has Hyprland and Quickshell.
 
 **Status: early preview.** The pieces listed under "What works" run in a real Hyprland session and were checked with screenshots and tests. Everything else is listed honestly under "Not built yet".
 
 ![Control center](docs/screenshots/control-center.png)
+![Ask Grace answering a question with a local model](docs/screenshots/ask-grace-answer.png)
 ![Settings and an agent approval request](docs/screenshots/settings-and-approval.png)
 ![Lock screen](docs/screenshots/lock-screen.png)
 ![CandySole with its right-click menu](docs/screenshots/candysole.png)
+
+<details>
+<summary>More screenshots: every Settings page</summary>
+
+![All 13 Settings pages](docs/screenshots/settings-all-pages.png)
+![Settings: AI & Models with the llama.cpp engine](docs/screenshots/settings-ai-models.png)
 ![Settings: Displays](docs/screenshots/settings-displays.png)
 ![Settings: Keyboard & Shortcuts](docs/screenshots/settings-keyboard.png)
 
-These screenshots come from a VMware VM without 3D acceleration (software rendering).
+</details>
+
+The desktop screenshots come from a VMware VM without 3D acceleration (software rendering). The Settings overview and the Ask Grace answer were captured headless, with no Wi-Fi, Bluetooth or sound hardware, so those pages show their empty states.
 
 ## What it is
 - **Compositor:** [Hyprland](https://hypr.land), with Grace defaults. Windows auto-tile with one gap value everywhere, rounded corners, hairline edges, soft shadows and blur.
@@ -28,16 +37,20 @@ These screenshots come from a VMware VM without 3D acceleration (software render
   - Battery or date, and Settings and Power buttons (Log out, Restart, Power off).
   - Six quick toggles: Wi-Fi, Bluetooth, Do Not Disturb, Dark Style, Power Mode and Night Light.
   - Volume and brightness sliders.
-  - The Local AI card: master AI switch, the running Ollama model with Stop, and the agent waiting on you.
+  - The Local AI card: master AI switch, the model CherryColaLLM has loaded (llama.cpp, Ollama or LM Studio) with Stop, and the agent waiting on you.
   - Notifications, with pending approvals pinned on top.
-- **Ask Grace** (Super+Space) searches your apps. With AI on, the last row asks [CherryCola](https://github.com/itsHarshDabas/GraceOS/tree/main/services/cherrycola), GraceOS's local model (Ollama or LM Studio), and streams the answer into the panel. If the model isn't downloaded yet, it offers a button to download it. Set `ask_command` in `desktop.conf` to use something else.
+- **Ask Grace** (Super+Space, or click the field in the middle of the top bar) searches your apps as you type. With AI on, the last row asks your question to [CherryColaLLM](https://github.com/itsHarshDabas/CherryColaLLM), GraceOS's local model runtime, and streams the answer into the panel, with Copy answer and Ask again buttons. Nothing leaves your PC.
+  - CherryColaLLM runs the model through **llama.cpp**, **Ollama** or **LM Studio**. Its packages bundle llama.cpp, so a `.gguf` model runs with nothing else installed.
+  - If the model isn't downloaded yet, Ask Grace offers a **Download the model** button. If CherryColaLLM isn't installed or its engine isn't reachable, it says so in one line instead of failing silently.
+  - With AI off (Settings → AI & Models, or the control center), the panel becomes a plain app search and the bar field says "Search…".
+  - Set `ask_command` in `desktop.conf` to answer with something else. It gets the question as its last argument and prints the answer.
 - **Lock screen, "Goodness GraceOS":** Super+L, the Lock button in the control center, after 10 minutes idle (adjustable in Settings) and before sleep. It shows the time, the date, your name and a password field, and checks the password with PAM. It uses the compositor's session lock, so if the shell crashes while locked, the screen stays locked.
 - **CandySole**, the GraceOS terminal (`apps/candysole`, GTK 4 + VTE): tabs, a right-click menu (Copy, Paste, Select All, New Tab, New Window, Open in Files, zoom), clickable links, Grace colors and Fira Code. `candysole -e CMD` runs a command.
 - **Dock:** hidden until the pointer touches the bottom-middle edge. It shows real app icons, a dot under running apps, and pinned apps from `desktop.conf`.
 - **Notifications:** banners at the top right for about 5 seconds. Do Not Disturb keeps them in the list without the banner.
 - **Cortex Council** (the AI parliament, [its own repo](https://github.com/itsHarshDabas/Cortex-Council)): open it from Ask Grace or the app list and it opens in your browser, after starting its local server in the background if it isn't running yet. Right-click → Stop Cortex Council, or `grace-cortex stop`, stops it. It uses the `cortex-council` command (the GraceOS package, or `npm link` in a checkout); otherwise a checkout at `cortex_council` in `desktop.conf`, `~/Cortex-Council` or `~/cortex-council`. If it isn't installed, a notification says so.
 - **Agent approvals:** `grace-approve AGENT COMMAND [CWD]` shows "Claude Code wants to run `npm install express` in ~/graceos" with Allow once, Deny and Details. See below.
-- **Settings** (Super+I, or `grace-settings "Page name"`), every page working:
+- **Grace Settings** (Super+I, or `grace-settings "Page name"`): 13 pages with a search field, every page working:
   - **Wi-Fi:** on/off, networks with signal and security, join with a password, disconnect, forget; nmtui for VPNs and the rest.
   - **Bluetooth:** on/off, your devices with battery level, connect/disconnect/forget, pair nearby devices.
   - **Displays:** resolution and refresh rate, scale, rotation and on/off per screen (saved to `~/.config/grace/monitors.lua`; screens saved by older versions in `monitors.conf` are carried over once), brightness, Night Light and its warmth.
@@ -46,7 +59,7 @@ These screenshots come from a VMware VM without 3D acceleration (software render
   - **Appearance:** Light or Dark, nine accent colors, gaps, corner roundness, blur, animations, dock.
   - **Windows & Workspaces:** Auto-tile or Floating, tiling style (split or main + stack), snapping, focus follows mouse.
   - **Keyboard & Shortcuts:** layouts and the switch shortcut, Caps Lock behavior, key repeat, pointer speed, natural scrolling, tap to click, and every shortcut.
-  - **AI & Models:** the AI switch, CherryCola's engine (Ollama or LM Studio), server start/stop, the model in use, download and remove models.
+  - **AI & Models:** the Local AI switch; CherryColaLLM's engine (Automatic, Ollama, LM Studio or llama.cpp); start and stop the server or the loaded model; the model Ask Grace uses; a model suggested for this PC's hardware; download and remove Ollama models; an Install button when CherryColaLLM is missing.
   - **Agents:** requests waiting for you, recent answers, which coding agents are installed, how to make one ask first.
   - **Privacy & Security:** lock timing, lock before sleep, what's using the microphone or camera, clear recent files, SSH on/off.
   - **Updates & Software:** check and install updates (Arch, GraceOS and the AUR), install a package, package counts.
@@ -65,27 +78,54 @@ These screenshots come from a VMware VM without 3D acceleration (software render
 
 ## Install
 
-### Arch Linux
+### GraceOS
+Grace Candyland is GraceOS's desktop, so the [GraceOS ISO](https://github.com/itsHarshDabas/GraceOS/releases) is the easiest way to get it, already set up.
+
+### An existing Arch install
+Add the signed `[graceos]` pacman repo (trusting its key once; the steps are in [GraceOS's install guide](https://github.com/itsHarshDabas/GraceOS/blob/main/docs/install-anywhere.md)), then:
+
+```
+sudo pacman -Syu grace-candyland-desktop
+sudo systemctl enable --now NetworkManager bluetooth   # if they aren't on yet
+```
+
+`grace-candyland-desktop` is the whole desktop: this shell and CandySole, the GraceOS apps (CottonCandy, ToffeeTwirl, CherryColaLLM, Cortex Council), Ollama, and the back ends the Settings pages use. Want only the shell? Install `grace-candyland` instead. Your system stays Arch Linux; only `graceos-release` renames it to GraceOS.
+
+The same packages are also being published to the AUR (`yay -S grace-candyland-desktop`) and build the same pinned commits; see the install guide for their status.
+
+### A fresh install from the Arch ISO
+Boot Arch's official ISO, get online, trust the GraceOS key, and run archinstall with the Grace Candyland profile:
+
+```
+curl -LO https://raw.githubusercontent.com/itsHarshDabas/GraceOS/main/installer/archinstall/grace_candyland.py
+archinstall --config-url https://raw.githubusercontent.com/itsHarshDabas/GraceOS/main/installer/archinstall/grace-candyland.json
+```
+
+archinstall opens with the Grace Candyland desktop profile, the `[graceos]` repo and SDDM already chosen; pick the disk and user and install. The full steps are in the [install guide](https://github.com/itsHarshDabas/GraceOS/blob/main/docs/install-anywhere.md#3-a-fresh-install-from-archs-official-iso).
+
+### From this checkout (Arch)
 ```
 git clone https://github.com/itsHarshDabas/grace-candyland
 cd grace-candyland/packaging/arch && makepkg -si
 ```
 
-### Other distros
-Install these with your package manager (or build them from source if yours are too old), then `make install`:
+### Debian, Ubuntu and other distros
+On Debian testing/sid and Ubuntu's development release, `grace-candyland` and `grace-candyland-desktop` come from GraceOS's apt repo ([how to add it](https://github.com/itsHarshDabas/GraceOS/blob/main/docs/install-apt-dnf.md)). Debian 13 and Ubuntu 24.04 don't package Hyprland or Quickshell, and Fedora doesn't package Hyprland or hypridle, so there you'd build those from source first.
+
+Anywhere else, install these with your package manager (or build them from source if yours are too old), then `make install`:
 
 | Needed | Optional |
 |---|---|
-| Hyprland, hypridle, Quickshell, Qt 6 SVG, Inter and Fira Code fonts, Adwaita cursors, xdg-utils, make; for CandySole: Python GObject, GTK 4, libadwaita, VTE for GTK 4 | CherryCola (+ Ollama or LM Studio), NetworkManager, BlueZ, PipeWire + WirePlumber, UPower, power-profiles-daemon, brightnessctl, hyprsunset, grim, libnotify, xdg-desktop-portal-hyprland |
+| Hyprland, hypridle, Quickshell, Qt 6 SVG, Inter and Fira Code fonts, Adwaita cursors, xdg-utils, make; for CandySole: Python GObject, GTK 4, libadwaita, VTE for GTK 4 | CherryColaLLM for Ask Grace (it bundles llama.cpp; Ollama or LM Studio are optional), NetworkManager, BlueZ, PipeWire + WirePlumber, UPower, power-profiles-daemon, brightnessctl, hyprsunset, grim, libnotify, xdg-desktop-portal-hyprland |
 
 ```
 sudo make install            # PREFIX=/usr by default; DESTDIR is supported for packaging
 ```
 
-It's tested with **Hyprland 0.56.2 and Quickshell 0.3.2** on Arch. The Hyprland config uses the current window-rule syntax (`blur on, match:namespace …`), which older Hyprland releases don't understand.
+It needs **Hyprland 0.55 or newer**, because its config is Lua (`hypr/hyprland.lua`; Hyprland 0.57 no longer reads `hyprland.conf` at all). CI verifies the config against Arch's current Hyprland on every push. The shell was tested with **Quickshell 0.3.2**.
 
 ## Use it
-Pick **Grace Candyland** in your display manager, or run `grace-candyland` from a text console.
+Pick **Grace Candyland** in your display manager (on plain Arch: `sudo pacman -S sddm && sudo systemctl enable sddm`), or run `grace-candyland` from a text console. For Ask Grace, download a model once with `cherrycolallm pull`, or from Settings → AI & Models.
 
 | Keys | Action |
 |---|---|
